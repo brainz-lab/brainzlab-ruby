@@ -1,0 +1,33 @@
+# frozen_string_literal: true
+
+BrainzLab.configure do |config|
+  # Your secret key from https://brainzlab.ai/dashboard
+  config.secret_key = <%= secret_key_value %>
+
+  # Environment (defaults to Rails.env)
+  # config.environment = Rails.env
+
+  # Service name (defaults to app name)
+  config.service = "<%= app_name %>"
+
+  # Minimum log level to send to Recall
+  # config.recall_min_level = :debug  # :debug, :info, :warn, :error, :fatal
+
+  # Buffer settings for batching logs
+  # config.recall_buffer_size = 50      # Flush after 50 logs
+  # config.recall_flush_interval = 5    # Or every 5 seconds
+
+  # Exceptions to exclude from Reflex error tracking
+  # config.reflex_excluded_exceptions = [
+  #   "ActionController::RoutingError",
+  #   "ActiveRecord::RecordNotFound"
+  # ]
+
+  # Fields to scrub from logs (defaults include :password, :token, :api_key, :secret)
+  # config.scrub_fields = %i[password password_confirmation token api_key secret credit_card]
+end
+<% if options[:replace_logger] %>
+
+# Send all Rails logs to Recall (keeps console output too)
+Rails.logger = BrainzLab.logger(broadcast_to: Rails.logger)
+<% end %>
