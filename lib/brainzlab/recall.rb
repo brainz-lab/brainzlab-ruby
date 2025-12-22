@@ -3,6 +3,7 @@
 require_relative "recall/client"
 require_relative "recall/buffer"
 require_relative "recall/logger"
+require_relative "recall/provisioner"
 
 module BrainzLab
   module Recall
@@ -30,10 +31,26 @@ module BrainzLab
       def log(level, message, **data)
         config = BrainzLab.configuration
         return unless config.recall_enabled
+
+        # Auto-provision project on first log if app_name is configured
+        ensure_provisioned!
+
         return unless config.level_enabled?(level)
+        return unless config.valid?
 
         entry = build_entry(level, message, data)
         buffer.push(entry)
+      end
+
+      def ensure_provisioned!
+        return if @provisioned
+
+        @provisioned = true
+        provisioner.ensure_project!
+      end
+
+      def provisioner
+        @provisioner ||= Provisioner.new(BrainzLab.configuration)
       end
 
       def time(label, **data)
@@ -64,6 +81,8 @@ module BrainzLab
       def reset!
         @client = nil
         @buffer = nil
+        @provisioner = nil
+        @provisioned = false
       end
 
       private

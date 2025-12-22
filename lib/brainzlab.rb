@@ -5,6 +5,7 @@ require_relative "brainzlab/configuration"
 require_relative "brainzlab/context"
 require_relative "brainzlab/recall"
 require_relative "brainzlab/reflex"
+require_relative "brainzlab/instrumentation"
 
 module BrainzLab
   class << self

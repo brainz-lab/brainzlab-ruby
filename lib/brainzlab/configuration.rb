@@ -10,18 +10,28 @@ module BrainzLab
                   :host,
                   :commit,
                   :branch,
+                  :app_name,
                   :recall_enabled,
                   :recall_url,
                   :recall_min_level,
                   :recall_buffer_size,
                   :recall_flush_interval,
+                  :recall_master_key,
+                  :recall_auto_provision,
                   :reflex_enabled,
                   :reflex_url,
                   :reflex_excluded_exceptions,
                   :reflex_before_send,
                   :reflex_sample_rate,
                   :scrub_fields,
-                  :logger
+                  :logger,
+                  :instrument_http,
+                  :http_ignore_hosts,
+                  :log_formatter_enabled,
+                  :log_formatter_colors,
+                  :log_formatter_hide_assets,
+                  :log_formatter_compact_assets,
+                  :log_formatter_show_params
 
     def initialize
       # Authentication
@@ -31,6 +41,9 @@ module BrainzLab
       @environment = ENV["BRAINZLAB_ENVIRONMENT"] || detect_environment
       @service = ENV["BRAINZLAB_SERVICE"]
       @host = ENV["BRAINZLAB_HOST"] || detect_host
+
+      # App name for auto-provisioning
+      @app_name = ENV["BRAINZLAB_APP_NAME"]
 
       # Git context
       @commit = ENV["GIT_COMMIT"] || ENV["COMMIT_SHA"] || detect_git_commit
@@ -42,6 +55,8 @@ module BrainzLab
       @recall_min_level = :debug
       @recall_buffer_size = 50
       @recall_flush_interval = 5
+      @recall_master_key = ENV["RECALL_MASTER_KEY"]
+      @recall_auto_provision = true
 
       # Reflex settings
       @reflex_enabled = true
@@ -55,6 +70,17 @@ module BrainzLab
 
       # Internal logger for debugging SDK issues
       @logger = nil
+
+      # Instrumentation
+      @instrument_http = false
+      @http_ignore_hosts = %w[localhost 127.0.0.1]
+
+      # Log formatter settings
+      @log_formatter_enabled = true
+      @log_formatter_colors = nil # auto-detect TTY
+      @log_formatter_hide_assets = false
+      @log_formatter_compact_assets = true
+      @log_formatter_show_params = true
     end
 
     def recall_min_level=(level)

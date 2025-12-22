@@ -23,6 +23,12 @@ module BrainzLab
       end
 
       config.after_initialize do
+        # Set up custom log formatter
+        setup_log_formatter if BrainzLab.configuration.log_formatter_enabled
+
+        # Install instrumentation (HTTP tracking, etc.)
+        BrainzLab::Instrumentation.install!
+
         # Hook into Rails 7+ error reporting
         if defined?(::Rails.error) && ::Rails.error.respond_to?(:subscribe)
           ::Rails.error.subscribe(BrainzLab::Rails::ErrorSubscriber.new)
@@ -45,6 +51,121 @@ module BrainzLab
           end
         end
       end
+
+      class << self
+        def setup_log_formatter
+          # Lazy require to ensure Rails is fully loaded
+          require_relative "log_formatter"
+          require_relative "log_subscriber"
+
+          config = BrainzLab.configuration
+
+          formatter_config = {
+            enabled: config.log_formatter_enabled,
+            colors: config.log_formatter_colors.nil? ? $stdout.tty? : config.log_formatter_colors,
+            hide_assets: config.log_formatter_hide_assets,
+            compact_assets: config.log_formatter_compact_assets,
+            show_params: config.log_formatter_show_params
+          }
+
+          # Create formatter and attach to subscriber
+          formatter = LogFormatter.new(formatter_config)
+          LogSubscriber.formatter = formatter
+
+          # Attach our subscribers
+          LogSubscriber.attach_to :action_controller
+          SqlLogSubscriber.attach_to :active_record
+          ViewLogSubscriber.attach_to :action_view
+
+          # Silence Rails default ActionController logging
+          silence_rails_logging
+        end
+
+        def silence_rails_logging
+          # Create a null logger that discards all output
+          null_logger = Logger.new(File::NULL)
+          null_logger.level = Logger::FATAL
+
+          # Silence ActiveRecord SQL logging
+          if defined?(ActiveRecord::Base)
+            ActiveRecord::Base.logger = null_logger
+          end
+
+          # Silence ActionController logging (the "Completed" message)
+          if defined?(ActionController::Base)
+            ActionController::Base.logger = null_logger
+          end
+
+          # Silence ActionView logging
+          if defined?(ActionView::Base)
+            ActionView::Base.logger = null_logger
+          end
+
+          # Silence the class-level loggers for specific subscribers
+          if defined?(ActionController::LogSubscriber)
+            ActionController::LogSubscriber.logger = null_logger
+          end
+
+          if defined?(ActionView::LogSubscriber)
+            ActionView::LogSubscriber.logger = null_logger
+          end
+
+          if defined?(ActiveRecord::LogSubscriber)
+            ActiveRecord::LogSubscriber.logger = null_logger
+          end
+
+          # Silence the main Rails logger to remove "Started GET" messages
+          # Wrap the formatter to filter specific messages
+          if defined?(::Rails.logger) && ::Rails.logger.respond_to?(:formatter=)
+            original_formatter = ::Rails.logger.formatter || Logger::Formatter.new
+            ::Rails.logger.formatter = FilteringFormatter.new(original_formatter)
+          end
+        rescue StandardError
+          # Silently fail if we can't silence
+        end
+      end
+    end
+
+    # Filtering logger that suppresses request-related messages
+    class FilteringLogger < SimpleDelegator
+      FILTERED_PATTERNS = [
+        /^Started (GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)/,
+        /^Processing by/,
+        /^Completed \d+/,
+        /^Cannot render console from/,
+        /^Parameters:/,
+        /^Rendering/,
+        /^Rendered/,
+        /^\s*$/  # Empty lines
+      ].freeze
+
+      def add(severity, message = nil, progname = nil, &block)
+        msg = message || (block ? block.call : progname)
+        return true if should_filter?(msg)
+
+        __getobj__.add(severity, message, progname, &block)
+      end
+
+      def debug(message = nil, &block)
+        return true if should_filter?(message || (block ? block.call : nil))
+
+        __getobj__.debug(message, &block)
+      end
+
+      def info(message = nil, &block)
+        return true if should_filter?(message || (block ? block.call : nil))
+
+        __getobj__.info(message, &block)
+      end
+
+      private
+
+      def should_filter?(msg)
+        return false unless msg
+
+        msg_str = msg.to_s
+        FILTERED_PATTERNS.any? { |pattern| msg_str =~ pattern }
+      end
     end
 
     # Middleware for request context
@@ -58,7 +179,11 @@ module BrainzLab
 
         # Set request context
         context = BrainzLab::Context.current
-        context.request_id = request.request_id || env["action_dispatch.request_id"]
+        request_id = request.request_id || env["action_dispatch.request_id"]
+        context.request_id = request_id
+
+        # Store request_id in thread local for log subscriber
+        Thread.current[:brainzlab_request_id] = request_id
         context.session_id = request.session.id.to_s if request.session.respond_to?(:id) && request.session.loaded?
 
         # Capture full request info for Reflex
@@ -96,6 +221,7 @@ module BrainzLab
 
         [status, headers, response]
       ensure
+        Thread.current[:brainzlab_request_id] = nil
         BrainzLab::Context.clear!
       end
 
@@ -163,7 +289,7 @@ module BrainzLab
 
       included do
         around_action :brainzlab_capture_context
-        rescue_from Exception, with: :brainzlab_capture_exception, prepend: true
+        rescue_from Exception, with: :brainzlab_capture_exception
       end
 
       private
