@@ -21,11 +21,18 @@ module Brainzlab
         say "BrainzLab SDK installed successfully!", :green
         say ""
         say "Next steps:"
-        say "  1. Set your BRAINZLAB_SECRET_KEY environment variable"
-        say "     Get your key from: https://brainzlab.ai/dashboard"
+        say "  1. Set your environment variables:"
+        say "     BRAINZLAB_SECRET_KEY - Your API key from https://brainzlab.ai/dashboard"
+        say ""
+        say "     Or for auto-provisioning:"
+        say "     RECALL_MASTER_KEY - Master key for Recall auto-provisioning"
+        say "     REFLEX_MASTER_KEY - Master key for Reflex auto-provisioning"
         say ""
         say "  2. Start logging:"
         say "     BrainzLab::Recall.info('Hello from BrainzLab!')"
+        say ""
+        say "  3. Capture errors (automatic with Rails, or manual):"
+        say "     BrainzLab::Reflex.capture(exception)"
         say ""
         if options[:replace_logger]
           say "  Rails.logger is now connected to Recall!", :yellow

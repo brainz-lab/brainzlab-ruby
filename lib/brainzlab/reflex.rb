@@ -2,6 +2,7 @@
 
 require_relative "reflex/client"
 require_relative "reflex/breadcrumbs"
+require_relative "reflex/provisioner"
 
 module BrainzLab
   module Reflex
@@ -13,6 +14,11 @@ module BrainzLab
         return if capture_disabled?
         return if excluded?(exception)
         return if sampled_out?
+
+        # Auto-provision project on first capture if app_name is configured
+        ensure_provisioned!
+
+        return unless BrainzLab.configuration.reflex_valid?
 
         payload = build_payload(exception, context)
         payload = run_before_send(payload, exception)
@@ -26,11 +32,27 @@ module BrainzLab
         return if capture_disabled?
         return if sampled_out?
 
+        # Auto-provision project on first capture if app_name is configured
+        ensure_provisioned!
+
+        return unless BrainzLab.configuration.reflex_valid?
+
         payload = build_message_payload(message, level, context)
         payload = run_before_send(payload, nil)
         return if payload.nil?
 
         client.send_error(payload)
+      end
+
+      def ensure_provisioned!
+        return if @provisioned
+
+        @provisioned = true
+        provisioner.ensure_project!
+      end
+
+      def provisioner
+        @provisioner ||= Provisioner.new(BrainzLab.configuration)
       end
 
       # Temporarily disable capture within a block
@@ -48,12 +70,14 @@ module BrainzLab
 
       def reset!
         @client = nil
+        @provisioner = nil
+        @provisioned = false
       end
 
       private
 
       def enabled?
-        BrainzLab.configuration.reflex_enabled && BrainzLab.configuration.valid?
+        BrainzLab.configuration.reflex_enabled
       end
 
       def capture_disabled?

@@ -15,13 +15,13 @@ module BrainzLab
       end
 
       def send_error(payload)
-        return unless @config.reflex_enabled && @config.valid?
+        return unless @config.reflex_enabled && @config.reflex_valid?
 
         post("/api/v1/errors", payload)
       end
 
       def send_batch(payloads)
-        return unless @config.reflex_enabled && @config.valid?
+        return unless @config.reflex_enabled && @config.reflex_valid?
         return if payloads.empty?
 
         post("/api/v1/errors/batch", { errors: payloads })
@@ -33,7 +33,7 @@ module BrainzLab
         uri = URI.join(@config.reflex_url, path)
         request = Net::HTTP::Post.new(uri)
         request["Content-Type"] = "application/json"
-        request["Authorization"] = "Bearer #{@config.secret_key}"
+        request["Authorization"] = "Bearer #{@config.reflex_auth_key}"
         request["User-Agent"] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
         request.body = JSON.generate(body)
 

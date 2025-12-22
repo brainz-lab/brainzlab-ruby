@@ -20,6 +20,9 @@ module BrainzLab
                   :recall_auto_provision,
                   :reflex_enabled,
                   :reflex_url,
+                  :reflex_api_key,
+                  :reflex_master_key,
+                  :reflex_auto_provision,
                   :reflex_excluded_exceptions,
                   :reflex_before_send,
                   :reflex_sample_rate,
@@ -61,6 +64,9 @@ module BrainzLab
       # Reflex settings
       @reflex_enabled = true
       @reflex_url = ENV["REFLEX_URL"] || "https://reflex.brainzlab.ai"
+      @reflex_api_key = ENV["REFLEX_API_KEY"]
+      @reflex_master_key = ENV["REFLEX_MASTER_KEY"]
+      @reflex_auto_provision = true
       @reflex_excluded_exceptions = []
       @reflex_before_send = nil
       @reflex_sample_rate = nil
@@ -96,6 +102,15 @@ module BrainzLab
 
     def valid?
       !@secret_key.nil? && !@secret_key.empty?
+    end
+
+    def reflex_valid?
+      key = reflex_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def reflex_auth_key
+      reflex_api_key || secret_key
     end
 
     private

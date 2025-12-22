@@ -21,6 +21,7 @@ module BrainzLab
     def reset_configuration!
       @configuration = Configuration.new
       Recall.reset!
+      Reflex.reset!
     end
 
     # Context management

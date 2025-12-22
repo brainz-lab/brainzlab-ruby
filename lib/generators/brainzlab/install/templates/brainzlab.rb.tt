@@ -2,13 +2,30 @@
 
 BrainzLab.configure do |config|
   # Your secret key from https://brainzlab.ai/dashboard
+  # If using auto-provisioning, you can omit this and set master keys instead
   config.secret_key = <%= secret_key_value %>
+
+  # App name for auto-provisioning (required for auto-provision)
+  config.app_name = "<%= app_name %>"
 
   # Environment (defaults to Rails.env)
   # config.environment = Rails.env
 
   # Service name (defaults to app name)
   config.service = "<%= app_name %>"
+
+  # ============================================================================
+  # Recall - Logging
+  # ============================================================================
+
+  # Enable/disable Recall logging
+  # config.recall_enabled = true
+
+  # Recall URL (defaults to https://recall.brainzlab.ai)
+  # config.recall_url = ENV.fetch("RECALL_URL", "https://recall.brainzlab.ai")
+
+  # Master key for auto-provisioning (set in environment)
+  # config.recall_master_key = ENV["RECALL_MASTER_KEY"]
 
   # Minimum log level to send to Recall
   # config.recall_min_level = :debug  # :debug, :info, :warn, :error, :fatal
@@ -17,13 +34,40 @@ BrainzLab.configure do |config|
   # config.recall_buffer_size = 50      # Flush after 50 logs
   # config.recall_flush_interval = 5    # Or every 5 seconds
 
+  # ============================================================================
+  # Reflex - Error Tracking
+  # ============================================================================
+
+  # Enable/disable Reflex error tracking
+  # config.reflex_enabled = true
+
+  # Reflex URL (defaults to https://reflex.brainzlab.ai)
+  # config.reflex_url = ENV.fetch("REFLEX_URL", "https://reflex.brainzlab.ai")
+
+  # Master key for auto-provisioning (set in environment)
+  # config.reflex_master_key = ENV["REFLEX_MASTER_KEY"]
+
   # Exceptions to exclude from Reflex error tracking
   # config.reflex_excluded_exceptions = [
   #   "ActionController::RoutingError",
+  #   "ActionController::InvalidAuthenticityToken",
   #   "ActiveRecord::RecordNotFound"
   # ]
 
-  # Fields to scrub from logs (defaults include :password, :token, :api_key, :secret)
+  # Sample rate for errors (1.0 = 100%, 0.5 = 50%)
+  # config.reflex_sample_rate = 1.0
+
+  # Before send hook to modify or filter errors
+  # config.reflex_before_send = ->(payload, exception) {
+  #   # Return nil to drop the error, or modify and return payload
+  #   payload
+  # }
+
+  # ============================================================================
+  # General
+  # ============================================================================
+
+  # Fields to scrub from logs and errors
   # config.scrub_fields = %i[password password_confirmation token api_key secret credit_card]
 end
 <% if options[:replace_logger] %>
