@@ -54,6 +54,7 @@ module BrainzLab
           show_params: true,
           show_sql_count: true,
           show_sql_details: true,
+          show_sql_queries: true,  # Show actual SQL queries
           show_views: true,
           slow_query_threshold: SLOW_QUERY_MS,
           n_plus_one_threshold: N_PLUS_ONE_THRESHOLD,
@@ -268,10 +269,13 @@ module BrainzLab
           lines << build_line("views", "#{data[:view_runtime].round(1)}ms")
         end
 
-        # Params line (if enabled and present)
+        # Params section (if enabled and present) - TOML style
         if config[:show_params] && data[:params].present?
           params_str = format_params(data[:params])
-          lines << build_line("params", params_str) if params_str
+          if params_str
+            lines << build_line("", colorize("[params]", :gray))
+            lines << params_str
+          end
         end
 
         # Error lines
@@ -331,6 +335,11 @@ module BrainzLab
           issues << build_line("", colorize("N+1", :red) + " " +
             colorize("#{table} × #{matching_queries.size}", :yellow) +
             colorize(" (#{source})", :gray))
+
+          # Show the query SQL in TOML-like format
+          if config[:show_sql_queries] && sample[:sql]
+            issues << format_sql_toml(sample[:sql], sample[:duration])
+          end
         end
 
         # Find slow queries (not cached, not already reported as N+1)
@@ -348,9 +357,121 @@ module BrainzLab
           issues << build_line("", colorize("Slow", :yellow) + " " +
             colorize("#{name} #{duration}ms", :white) +
             colorize(" (#{source})", :gray))
+
+          # Show the query SQL in TOML-like format
+          if config[:show_sql_queries] && query[:sql]
+            issues << format_sql_toml(query[:sql], query[:duration])
+          end
         end
 
         issues
+      end
+
+      def format_sql_toml(sql, duration = nil)
+        lines = []
+        prefix = colorize("#{BOX[:vertical]}  ", :cyan)
+        indent = "     "
+
+        # Parse SQL to extract key components
+        parsed = parse_sql(sql)
+
+        # Format as TOML-like structure
+        lines << "#{prefix}#{indent}#{colorize('[query]', :gray)}"
+
+        if parsed[:operation]
+          lines << "#{prefix}#{indent}#{colorize('operation', :gray)} = #{colorize("\"#{parsed[:operation]}\"", :green)}"
+        end
+
+        if parsed[:table]
+          lines << "#{prefix}#{indent}#{colorize('table', :gray)} = #{colorize("\"#{parsed[:table]}\"", :green)}"
+        end
+
+        if parsed[:columns].any?
+          cols = parsed[:columns].first(5).map { |c| "\"#{c}\"" }.join(", ")
+          cols += ", ..." if parsed[:columns].size > 5
+          lines << "#{prefix}#{indent}#{colorize('columns', :gray)} = [#{colorize(cols, :cyan)}]"
+        end
+
+        if parsed[:conditions].any?
+          lines << "#{prefix}#{indent}#{colorize('[query.where]', :gray)}"
+          parsed[:conditions].each do |cond|
+            lines << "#{prefix}#{indent}#{colorize(cond[:column], :white)} = #{colorize(cond[:value], :yellow)}"
+          end
+        end
+
+        if parsed[:order]
+          lines << "#{prefix}#{indent}#{colorize('order', :gray)} = #{colorize("\"#{parsed[:order]}\"", :green)}"
+        end
+
+        if parsed[:limit]
+          lines << "#{prefix}#{indent}#{colorize('limit', :gray)} = #{colorize(parsed[:limit].to_s, :magenta)}"
+        end
+
+        if duration
+          lines << "#{prefix}#{indent}#{colorize('duration_ms', :gray)} = #{colorize(duration.round(2).to_s, :magenta)}"
+        end
+
+        lines.join("\n")
+      end
+
+      def parse_sql(sql)
+        result = {
+          operation: nil,
+          table: nil,
+          columns: [],
+          conditions: [],
+          order: nil,
+          limit: nil
+        }
+
+        return result unless sql
+
+        # Detect operation
+        result[:operation] = case sql
+                             when /^\s*SELECT/i then "SELECT"
+                             when /^\s*INSERT/i then "INSERT"
+                             when /^\s*UPDATE/i then "UPDATE"
+                             when /^\s*DELETE/i then "DELETE"
+                             else sql.split.first&.upcase
+                             end
+
+        # Extract table name
+        if (match = sql.match(/FROM\s+"?(\w+)"?/i))
+          result[:table] = match[1]
+        elsif (match = sql.match(/INTO\s+"?(\w+)"?/i))
+          result[:table] = match[1]
+        elsif (match = sql.match(/UPDATE\s+"?(\w+)"?/i))
+          result[:table] = match[1]
+        end
+
+        # Extract selected columns (for SELECT)
+        if (match = sql.match(/SELECT\s+(.+?)\s+FROM/i))
+          cols = match[1]
+          if cols.strip != "*"
+            result[:columns] = cols.split(",").map { |c| c.strip.gsub(/"/, "").split(".").last }
+          end
+        end
+
+        # Extract WHERE conditions
+        if (where_match = sql.match(/WHERE\s+(.+?)(?:ORDER|LIMIT|GROUP|$)/i))
+          where_clause = where_match[1]
+          # Parse individual conditions
+          where_clause.scan(/"?(\w+)"?\s*=\s*('[^']*'|\$\d+|\d+)/i).each do |col, val|
+            result[:conditions] << { column: col, value: val }
+          end
+        end
+
+        # Extract ORDER BY
+        if (match = sql.match(/ORDER\s+BY\s+"?(\w+)"?\s*(ASC|DESC)?/i))
+          result[:order] = "#{match[1]} #{match[2] || 'ASC'}".strip
+        end
+
+        # Extract LIMIT
+        if (match = sql.match(/LIMIT\s+(\d+)/i))
+          result[:limit] = match[1].to_i
+        end
+
+        result
       end
 
       def format_view_summary(views)
@@ -522,32 +643,140 @@ module BrainzLab
       def format_params(params)
         return nil if params.empty?
 
-        # Filter out controller and action
+        # Filter out controller, action, and duplicate keys
         filtered = params.except("controller", "action", :controller, :action)
+
+        # Skip 'ingest' if 'logs' exists (they're the same data)
+        if filtered.key?("logs") || filtered.key?(:logs)
+          filtered = filtered.except("ingest", :ingest)
+        end
+
         return nil if filtered.empty?
 
-        # Truncate large values
-        simplified = simplify_params(filtered)
-        str = simplified.inspect
-        truncate(str, config[:line_width] - 20)
+        # Format as TOML-like structure
+        format_params_toml(filtered)
       end
 
-      def simplify_params(obj, depth = 0)
-        return "..." if depth > 2
+      def hash_like?(obj)
+        obj.is_a?(Hash) || obj.respond_to?(:to_h) && obj.respond_to?(:each)
+      end
 
-        case obj
-        when Hash
-          obj.transform_values { |v| simplify_params(v, depth + 1) }
-        when Array
-          if obj.length > 3
-            obj.first(3).map { |v| simplify_params(v, depth + 1) } + ["...(#{obj.length - 3} more)"]
+      def format_params_toml(params, prefix = "", depth = 0)
+        lines = []
+        line_prefix = colorize("#{BOX[:vertical]}  ", :cyan)
+        indent = "     " + ("  " * depth)
+
+        params.each do |key, value|
+          full_key = prefix.empty? ? key.to_s : "#{prefix}.#{key}"
+
+          case value
+          when Hash, ActionController::Parameters
+            value_hash = value.to_h rescue value
+            if value_hash.keys.length <= 3 && value_hash.values.all? { |v| !hash_like?(v) && !v.is_a?(Array) }
+              # Compact inline hash for simple cases
+              inline = value_hash.map { |k, v| "#{k} = #{format_value(v)}" }.join(", ")
+              lines << "#{line_prefix}#{indent}#{colorize(full_key, :white)} = { #{inline} }"
+            else
+              # Nested section - expand fully
+              lines << "#{line_prefix}#{indent}#{colorize("[#{full_key}]", :gray)}"
+              value_hash.each do |k, v|
+                if hash_like?(v)
+                  # Recursively format nested hashes
+                  lines << format_hash_nested(v.to_h, "#{full_key}.#{k}", depth + 1)
+                elsif v.is_a?(Array) && hash_like?(v.first)
+                  lines << "#{line_prefix}#{indent}  #{colorize("[[#{full_key}.#{k}]]", :gray)} #{colorize("# #{v.length} items", :gray)}"
+                  if v.first
+                    first_hash = v.first.to_h rescue v.first
+                    first_hash.each do |nested_k, nested_v|
+                      lines << "#{line_prefix}#{indent}  #{colorize(nested_k.to_s, :white)} = #{format_value(nested_v)}"
+                    end
+                  end
+                else
+                  lines << "#{line_prefix}#{indent}  #{colorize(k.to_s, :white)} = #{format_value(v)}"
+                end
+              end
+            end
+          when Array
+            if value.length <= 5 && value.all? { |v| !hash_like?(v) && !v.is_a?(Array) }
+              # Compact inline array
+              arr = value.map { |v| format_value(v) }.join(", ")
+              lines << "#{line_prefix}#{indent}#{colorize(full_key, :white)} = [#{arr}]"
+            elsif hash_like?(value.first)
+              # Array of hashes (like logs array) - show each item
+              lines << "#{line_prefix}#{indent}#{colorize("[[#{full_key}]]", :gray)} #{colorize("# #{value.length} items", :gray)}"
+              # Show first item fully expanded
+              if value.first
+                first_item = value.first.to_h rescue value.first
+                first_item.each do |k, v|
+                  if hash_like?(v)
+                    # Expand nested hash fully
+                    nested_hash = v.to_h rescue v
+                    lines << "#{line_prefix}#{indent}  #{colorize("[#{k}]", :gray)}"
+                    nested_hash.each do |nested_k, nested_v|
+                      lines << "#{line_prefix}#{indent}    #{colorize(nested_k.to_s, :white)} = #{format_value(nested_v)}"
+                    end
+                  else
+                    lines << "#{line_prefix}#{indent}  #{colorize(k.to_s, :white)} = #{format_value(v)}"
+                  end
+                end
+              end
+            else
+              # Large array of primitives
+              arr = value.first(5).map { |v| format_value(v) }.join(", ")
+              arr += ", ..." if value.length > 5
+              lines << "#{line_prefix}#{indent}#{colorize(full_key, :white)} = [#{arr}] #{colorize("# #{value.length} items", :gray)}"
+            end
           else
-            obj.map { |v| simplify_params(v, depth + 1) }
+            lines << "#{line_prefix}#{indent}#{colorize(full_key, :white)} = #{format_value(value)}"
           end
+        end
+
+        lines.join("\n")
+      end
+
+      def format_hash_nested(hash, prefix, depth)
+        lines = []
+        line_prefix = colorize("#{BOX[:vertical]}  ", :cyan)
+        indent = "     " + ("  " * depth)
+
+        lines << "#{line_prefix}#{indent}#{colorize("[#{prefix}]", :gray)}"
+        hash.each do |k, v|
+          if v.is_a?(Hash)
+            lines << format_hash_nested(v, "#{prefix}.#{k}", depth + 1)
+          else
+            lines << "#{line_prefix}#{indent}  #{colorize(k.to_s, :white)} = #{format_value(v)}"
+          end
+        end
+
+        lines.join("\n")
+      end
+
+      def format_value(value)
+        case value
         when String
-          obj.length > 50 ? "#{obj[0..47]}..." : obj
+          if value.length > 100
+            colorize("\"#{value[0..97]}...\"", :green)
+          else
+            colorize("\"#{value}\"", :green)
+          end
+        when Integer, Float
+          colorize(value.to_s, :magenta)
+        when TrueClass, FalseClass
+          colorize(value.to_s, :cyan)
+        when NilClass
+          colorize("null", :gray)
+        when Hash
+          items = value.first(3).map { |k, v| "#{k} = #{format_value(v)}" }.join(", ")
+          items += ", ..." if value.keys.length > 3
+          "{ #{items} }"
+        when Array
+          if value.length <= 3
+            "[#{value.map { |v| format_value(v) }.join(", ")}]"
+          else
+            "[#{value.first(3).map { |v| format_value(v) }.join(", ")}, ...] #{colorize("# #{value.length} items", :gray)}"
+          end
         else
-          obj
+          colorize(value.to_s, :white)
         end
       end
 

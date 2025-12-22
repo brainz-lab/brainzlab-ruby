@@ -76,6 +76,7 @@ module BrainzLab
           LogSubscriber.attach_to :action_controller
           SqlLogSubscriber.attach_to :active_record
           ViewLogSubscriber.attach_to :action_view
+          CableLogSubscriber.attach_to :action_cable
 
           # Silence Rails default ActionController logging
           silence_rails_logging
@@ -114,6 +115,15 @@ module BrainzLab
             ActiveRecord::LogSubscriber.logger = null_logger
           end
 
+          # Silence ActionCable logging
+          if defined?(ActionCable::Server::Base)
+            ActionCable.server.config.logger = null_logger
+          end
+
+          if defined?(ActionCable::Connection::TaggedLoggerProxy)
+            # ActionCable uses a tagged logger proxy that we need to quiet
+          end
+
           # Silence the main Rails logger to remove "Started GET" messages
           # Wrap the formatter to filter specific messages
           if defined?(::Rails.logger) && ::Rails.logger.respond_to?(:formatter=)
@@ -137,6 +147,7 @@ module BrainzLab
         /^Parameters:/,
         /^Rendering/,
         /^Rendered/,
+        /^\[ActionCable\] Broadcasting/,
         /^\s*$/  # Empty lines
       ].freeze
 
