@@ -126,8 +126,9 @@ module BrainzLab
       end
     end
 
-    # Filtering logger that suppresses request-related messages
-    class FilteringLogger < SimpleDelegator
+    # Filtering formatter that suppresses request-related messages
+    # Uses SimpleDelegator to support all formatter methods (including tagged logging)
+    class FilteringFormatter < SimpleDelegator
       FILTERED_PATTERNS = [
         /^Started (GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)/,
         /^Processing by/,
@@ -139,23 +140,10 @@ module BrainzLab
         /^\s*$/  # Empty lines
       ].freeze
 
-      def add(severity, message = nil, progname = nil, &block)
-        msg = message || (block ? block.call : progname)
-        return true if should_filter?(msg)
+      def call(severity, datetime, progname, msg)
+        return nil if should_filter?(msg)
 
-        __getobj__.add(severity, message, progname, &block)
-      end
-
-      def debug(message = nil, &block)
-        return true if should_filter?(message || (block ? block.call : nil))
-
-        __getobj__.debug(message, &block)
-      end
-
-      def info(message = nil, &block)
-        return true if should_filter?(message || (block ? block.call : nil))
-
-        __getobj__.info(message, &block)
+        __getobj__.call(severity, datetime, progname, msg)
       end
 
       private
