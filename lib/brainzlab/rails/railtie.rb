@@ -172,7 +172,13 @@ module BrainzLab
 
         # Store request_id in thread local for log subscriber
         Thread.current[:brainzlab_request_id] = request_id
-        context.session_id = request.session.id.to_s if request.session.respond_to?(:id) && request.session.loaded?
+
+        # Capture session_id - access session to ensure it's loaded
+        if request.session.respond_to?(:id)
+          # Force session load by accessing it
+          session_id = request.session.id rescue nil
+          context.session_id = session_id.to_s if session_id.present?
+        end
 
         # Capture full request info for Reflex
         context.request_method = request.request_method
