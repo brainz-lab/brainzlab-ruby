@@ -57,8 +57,23 @@ module BrainzLab
           show_views: true,
           slow_query_threshold: SLOW_QUERY_MS,
           n_plus_one_threshold: N_PLUS_ONE_THRESHOLD,
-          line_width: 70
+          line_width: detect_terminal_width
         }
+      end
+
+      def detect_terminal_width
+        # Try to get terminal width, fallback to 120
+        width = ENV["COLUMNS"]&.to_i
+        return width if width && width > 0
+
+        if $stdout.tty? && IO.respond_to?(:console) && IO.console
+          _rows, cols = IO.console.winsize
+          return cols if cols > 0
+        end
+
+        120 # Default to 120 for wider output
+      rescue
+        120
       end
 
       # Called when a request starts
