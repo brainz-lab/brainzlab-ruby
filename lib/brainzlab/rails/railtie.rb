@@ -223,6 +223,7 @@ module BrainzLab
 
         # Start Pulse trace if enabled and path not excluded
         should_trace = should_trace_request?(request)
+        Rails.logger.debug "[BrainzLab::Middleware] should_trace=#{should_trace} for #{request.request_method} #{request.path} (pulse_enabled=#{BrainzLab.configuration.pulse_enabled})"
         if should_trace
           # Initialize spans array for this request
           Thread.current[:brainzlab_pulse_spans] = []
@@ -257,7 +258,9 @@ module BrainzLab
         raise
       ensure
         # Finish Pulse trace for successful requests
+        Rails.logger.debug "[BrainzLab::Middleware] ensure block: should_trace=#{should_trace}, exception=$#{$!.class rescue 'nil'}, status=#{status.inspect}"
         if should_trace && !$!
+          Rails.logger.debug "[BrainzLab::Middleware] Recording pulse trace for #{request.request_method} #{request.path}"
           record_pulse_trace(request, started_at, status)
         end
 
@@ -283,6 +286,7 @@ module BrainzLab
       end
 
       def record_pulse_trace(request, started_at, status)
+        Rails.logger.debug "[BrainzLab::Middleware] record_pulse_trace called for #{request.request_method} #{request.path} with status=#{status}"
         ended_at = Time.now.utc
         context = BrainzLab::Context.current
 
