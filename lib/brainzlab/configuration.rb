@@ -37,6 +37,14 @@ module BrainzLab
                   :pulse_flush_interval,
                   :pulse_sample_rate,
                   :pulse_excluded_paths,
+                  :flux_enabled,
+                  :flux_url,
+                  :flux_api_key,
+                  :flux_ingest_key,
+                  :flux_master_key,
+                  :flux_auto_provision,
+                  :flux_buffer_size,
+                  :flux_flush_interval,
                   :scrub_fields,
                   :logger,
                   :instrument_http,
@@ -107,6 +115,16 @@ module BrainzLab
       @pulse_sample_rate = nil
       @pulse_excluded_paths = %w[/health /ping /up /assets]
 
+      # Flux settings
+      @flux_enabled = true
+      @flux_url = ENV["FLUX_URL"] || "https://flux.brainzlab.ai"
+      @flux_api_key = ENV["FLUX_API_KEY"]
+      @flux_ingest_key = ENV["FLUX_INGEST_KEY"]
+      @flux_master_key = ENV["FLUX_MASTER_KEY"]
+      @flux_auto_provision = true
+      @flux_buffer_size = 100
+      @flux_flush_interval = 5
+
       # Filtering
       @scrub_fields = %i[password password_confirmation token api_key secret]
 
@@ -166,6 +184,15 @@ module BrainzLab
 
     def pulse_auth_key
       pulse_api_key || secret_key
+    end
+
+    def flux_valid?
+      key = flux_ingest_key || flux_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def flux_auth_key
+      flux_ingest_key || flux_api_key || secret_key
     end
 
     def debug?

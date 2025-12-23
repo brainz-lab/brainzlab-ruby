@@ -43,6 +43,11 @@ module BrainzLab
       end
 
       def ensure_provisioned!
+        config = BrainzLab.configuration
+        if config.debug
+          puts "[BrainzLab::Debug] Recall.ensure_provisioned! called, @provisioned=#{@provisioned}"
+        end
+
         return if @provisioned
 
         @provisioned = true

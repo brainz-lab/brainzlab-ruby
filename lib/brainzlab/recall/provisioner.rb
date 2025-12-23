@@ -37,12 +37,29 @@ module BrainzLab
       private
 
       def should_provision?
+        if @config.debug
+          log_debug("Checking provision conditions:")
+          log_debug("  recall_auto_provision: #{@config.recall_auto_provision}")
+          log_debug("  app_name: '#{@config.app_name}'")
+          log_debug("  secret_key set: #{@config.secret_key.to_s.strip.length > 0}")
+          log_debug("  recall_master_key set: #{@config.recall_master_key.to_s.strip.length > 0}")
+        end
+
         return false unless @config.recall_auto_provision
         return false unless @config.app_name.to_s.strip.length > 0
         return false if @config.secret_key.to_s.strip.length > 0
         return false unless @config.recall_master_key.to_s.strip.length > 0
 
+        log_debug("Will provision Recall project") if @config.debug
         true
+      end
+
+      def log_debug(message)
+        if @config.logger
+          @config.logger.info("[BrainzLab::Debug] #{message}")
+        else
+          puts "[BrainzLab::Debug] #{message}"
+        end
       end
 
       def provision_project

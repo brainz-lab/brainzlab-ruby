@@ -6,6 +6,7 @@ require_relative "brainzlab/context"
 require_relative "brainzlab/recall"
 require_relative "brainzlab/reflex"
 require_relative "brainzlab/pulse"
+require_relative "brainzlab/flux"
 require_relative "brainzlab/instrumentation"
 
 module BrainzLab
@@ -24,6 +25,7 @@ module BrainzLab
       Recall.reset!
       Reflex.reset!
       Pulse.reset!
+      Flux.reset!
     end
 
     # Context management
@@ -99,6 +101,14 @@ module BrainzLab
         results[:services][:pulse] = check_service_health(
           url: configuration.pulse_url,
           name: 'Pulse'
+        )
+      end
+
+      # Check Flux
+      if configuration.flux_enabled
+        results[:services][:flux] = check_service_health(
+          url: configuration.flux_url,
+          name: 'Flux'
         )
       end
 
