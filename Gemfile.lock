@@ -1,9 +1,9 @@
 PATH
   remote: .
   specs:
-    brainzlab-sdk (0.1.0)
+    brainzlab (0.1.0)
       concurrent-ruby (~> 1.0)
-      logger
+      logger (~> 1.5)
 
 GEM
   remote: https://rubygems.org/
@@ -44,7 +44,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  brainzlab-sdk!
+  brainzlab!
   rake (~> 13.0, >= 0)
   rspec (~> 3.0, >= 0)
   webmock (~> 3.0, >= 0)
