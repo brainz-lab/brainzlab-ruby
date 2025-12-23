@@ -19,6 +19,7 @@ Gem::Specification.new do |spec|
   spec.metadata["changelog_uri"] = "https://github.com/brainz-lab/brainzlab-ruby/blob/main/CHANGELOG.md"
   spec.metadata["documentation_uri"] = "https://docs.brainzlab.ai/sdk/ruby"
   spec.metadata["rubygems_mfa_required"] = "true"
+  spec.metadata["github_repo"] = "ssh://github.com/brainz-lab/brainzlab-ruby"
 
   spec.files = Dir.chdir(__dir__) do
     Dir["{lib}/**/*", "LICENSE", "README.md", "CHANGELOG.md"]

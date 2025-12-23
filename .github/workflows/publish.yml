@@ -1,0 +1,94 @@
+name: Publish Gem
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (leave empty to use current version)'
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      gem_name: ${{ steps.build.outputs.gem_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Build gem
+        id: build
+        run: |
+          gem build brainzlab.gemspec
+          echo "gem_name=$(ls *.gem)" >> $GITHUB_OUTPUT
+
+      - name: Upload gem artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gem
+          path: "*.gem"
+
+  publish-rubygems:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: rubygems
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: gem
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Configure RubyGems credentials
+        run: |
+          mkdir -p ~/.gem
+          cat << EOF > ~/.gem/credentials
+          ---
+          :rubygems_api_key: ${{ secrets.RUBYGEMS_API_KEY }}
+          EOF
+          chmod 0600 ~/.gem/credentials
+
+      - name: Publish to RubyGems
+        run: |
+          gem push ${{ needs.build.outputs.gem_name }}
+
+  publish-github-packages:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: gem
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+
+      - name: Configure GitHub Packages credentials
+        run: |
+          mkdir -p ~/.gem
+          cat << EOF > ~/.gem/credentials
+          ---
+          :github: Bearer ${{ secrets.GITHUB_TOKEN }}
+          EOF
+          chmod 0600 ~/.gem/credentials
+
+      - name: Publish to GitHub Packages
+        run: |
+          gem push --key github \
+            --host https://rubygems.pkg.github.com/${{ github.repository_owner }} \
+            ${{ needs.build.outputs.gem_name }}

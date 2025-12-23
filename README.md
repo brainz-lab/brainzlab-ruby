@@ -1,6 +1,7 @@
 # BrainzLab Ruby SDK
 
 [![Gem Version](https://badge.fury.io/rb/brainzlab.svg)](https://rubygems.org/gems/brainzlab)
+[![CI](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Ossassy-blue.svg)](LICENSE)
 
 Official Ruby SDK for [BrainzLab](https://brainzlab.ai) - the complete observability platform.
@@ -10,6 +11,8 @@ Official Ruby SDK for [BrainzLab](https://brainzlab.ai) - the complete observabi
 - **Pulse** - APM & distributed tracing
 
 ## Installation
+
+### From RubyGems (recommended)
 
 Add to your Gemfile:
 
@@ -21,6 +24,22 @@ Then run:
 
 ```bash
 bundle install
+```
+
+### From GitHub Packages
+
+Add the GitHub Packages source to your Gemfile:
+
+```ruby
+source "https://rubygems.pkg.github.com/brainz-lab" do
+  gem 'brainzlab'
+end
+```
+
+Configure Bundler with your GitHub token:
+
+```bash
+bundle config set --global rubygems.pkg.github.com USERNAME:TOKEN
 ```
 
 ## Quick Start
