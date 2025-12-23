@@ -1,5 +1,8 @@
 # BrainzLab Ruby SDK
 
+[![Gem Version](https://badge.fury.io/rb/brainzlab.svg)](https://rubygems.org/gems/brainzlab)
+[![License](https://img.shields.io/badge/license-Ossassy-blue.svg)](LICENSE)
+
 Official Ruby SDK for [BrainzLab](https://brainzlab.ai) - the complete observability platform.
 
 - **Recall** - Structured logging
