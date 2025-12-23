@@ -146,6 +146,9 @@ module BrainzLab
         # Add breadcrumbs
         payload[:breadcrumbs] = ctx.breadcrumbs.to_a
 
+        # Add fingerprint for error grouping
+        payload[:fingerprint] = compute_fingerprint(exception, context, ctx)
+
         payload
       end
 
@@ -292,6 +295,78 @@ module BrainzLab
           else
             key_str == field.to_s.downcase
           end
+        end
+      end
+
+      # Compute fingerprint for error grouping
+      # Returns an array of strings that uniquely identify the error type
+      def compute_fingerprint(exception, context, ctx)
+        custom_callback = BrainzLab.configuration.reflex_fingerprint
+
+        if custom_callback
+          # Call user's custom fingerprint callback
+          result = custom_callback.call(exception, context, ctx)
+
+          # Normalize the result
+          case result
+          when Array
+            result.map(&:to_s)
+          when String
+            [result]
+          when nil
+            # nil means use default fingerprinting
+            default_fingerprint(exception)
+          else
+            [result.to_s]
+          end
+        else
+          default_fingerprint(exception)
+        end
+      rescue StandardError => e
+        BrainzLab.debug_log("Custom fingerprint callback failed: #{e.message}")
+        default_fingerprint(exception)
+      end
+
+      # Default fingerprint: error class + first in-app frame (or first frame)
+      def default_fingerprint(exception)
+        parts = [exception.class.name]
+
+        if exception.backtrace&.any?
+          # Try to find the first in-app frame
+          in_app_frame = exception.backtrace.find { |line| in_app_line?(line) }
+          frame = in_app_frame || exception.backtrace.first
+
+          if frame
+            # Normalize the frame (remove line numbers for consistent grouping)
+            normalized = normalize_frame_for_fingerprint(frame)
+            parts << normalized if normalized
+          end
+        end
+
+        parts
+      end
+
+      def in_app_line?(line)
+        return false if line.nil?
+        return false if line.include?("vendor/")
+        return false if line.include?("/gems/")
+
+        line.start_with?("app/", "lib/", "./app/", "./lib/") ||
+          line.include?("/app/") ||
+          line.include?("/lib/")
+      end
+
+      def normalize_frame_for_fingerprint(frame)
+        return nil unless frame.is_a?(String)
+
+        # Extract file and method, normalize out line numbers
+        # "app/models/user.rb:42:in `save'" -> "app/models/user.rb:in `save'"
+        if frame =~ /\A(.+):\d+:in `(.+)'\z/
+          "#{$1}:in `#{$2}'"
+        elsif frame =~ /\A(.+):\d+\z/
+          $1
+        else
+          frame
         end
       end
     end

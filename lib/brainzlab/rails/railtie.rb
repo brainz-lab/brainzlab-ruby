@@ -29,6 +29,9 @@ module BrainzLab
         # Install instrumentation (HTTP tracking, etc.)
         BrainzLab::Instrumentation.install!
 
+        # Install Pulse APM instrumentation (DB, views, cache)
+        BrainzLab::Pulse::Instrumentation.install!
+
         # Hook into Rails 7+ error reporting
         if defined?(::Rails.error) && ::Rails.error.respond_to?(:subscribe)
           ::Rails.error.subscribe(BrainzLab::Rails::ErrorSubscriber.new)
@@ -175,6 +178,7 @@ module BrainzLab
 
       def call(env)
         request = ActionDispatch::Request.new(env)
+        started_at = Time.now.utc
 
         # Set request context
         context = BrainzLab::Context.current
@@ -214,6 +218,22 @@ module BrainzLab
           user_agent: request.user_agent
         )
 
+        # Extract distributed tracing context from incoming request headers
+        parent_context = BrainzLab::Pulse.extract!(env)
+
+        # Start Pulse trace if enabled and path not excluded
+        should_trace = should_trace_request?(request)
+        if should_trace
+          # Initialize spans array for this request
+          Thread.current[:brainzlab_pulse_spans] = []
+          Thread.current[:brainzlab_pulse_breakdown] = nil
+          BrainzLab::Pulse.start_trace(
+            "#{request.request_method} #{request.path}",
+            kind: "request",
+            parent_context: parent_context
+          )
+        end
+
         status, headers, response = @app.call(env)
 
         # Add breadcrumb for response
@@ -225,9 +245,87 @@ module BrainzLab
         )
 
         [status, headers, response]
+      rescue StandardError => e
+        # Record error in Pulse trace
+        if should_trace
+          BrainzLab::Pulse.finish_trace(
+            error: true,
+            error_class: e.class.name,
+            error_message: e.message
+          )
+        end
+        raise
       ensure
+        # Finish Pulse trace for successful requests
+        if should_trace && !$!
+          record_pulse_trace(request, started_at, status)
+        end
+
         Thread.current[:brainzlab_request_id] = nil
         BrainzLab::Context.clear!
+        BrainzLab::Pulse::Propagation.clear!
+      end
+
+      def should_trace_request?(request)
+        return false unless BrainzLab.configuration.pulse_enabled
+
+        excluded = BrainzLab.configuration.pulse_excluded_paths || []
+        path = request.path
+
+        # Check if path matches any excluded pattern
+        !excluded.any? do |pattern|
+          if pattern.include?("*")
+            File.fnmatch?(pattern, path)
+          else
+            path.start_with?(pattern)
+          end
+        end
+      end
+
+      def record_pulse_trace(request, started_at, status)
+        ended_at = Time.now.utc
+        context = BrainzLab::Context.current
+
+        # Collect spans from instrumentation
+        spans = Thread.current[:brainzlab_pulse_spans] || []
+        breakdown = Thread.current[:brainzlab_pulse_breakdown] || {}
+
+
+        # Format spans for API
+        formatted_spans = spans.map do |span|
+          {
+            span_id: span[:span_id],
+            name: span[:name],
+            kind: span[:kind],
+            started_at: format_timestamp(span[:started_at]),
+            ended_at: format_timestamp(span[:ended_at]),
+            duration_ms: span[:duration_ms],
+            data: span[:data]
+          }
+        end
+
+        BrainzLab::Pulse.record_trace(
+          "#{request.request_method} #{request.path}",
+          kind: "request",
+          started_at: started_at,
+          ended_at: ended_at,
+          request_id: context.request_id,
+          request_method: request.request_method,
+          request_path: request.path,
+          controller: context.controller,
+          action: context.action,
+          status: status,
+          error: status.to_i >= 500,
+          view_ms: breakdown[:view_ms],
+          db_ms: breakdown[:db_ms],
+          spans: formatted_spans
+        )
+      rescue StandardError => e
+        BrainzLab.configuration.logger&.error("[BrainzLab::Pulse] Failed to record trace: #{e.message}")
+      ensure
+        # Clean up thread locals
+        Thread.current[:brainzlab_pulse_spans] = nil
+        Thread.current[:brainzlab_pulse_breakdown] = nil
       end
 
       private
@@ -256,6 +354,21 @@ module BrainzLab
           obj.map { |v| deep_filter(v) }
         else
           obj
+        end
+      end
+
+      def format_timestamp(ts)
+        return nil unless ts
+
+        case ts
+        when Time, DateTime
+          ts.utc.iso8601(3)
+        when Float, Integer
+          Time.at(ts).utc.iso8601(3)
+        when String
+          ts
+        else
+          ts.to_s
         end
       end
 
@@ -321,7 +434,7 @@ module BrainzLab
       end
     end
 
-    # ActiveJob extension for background job error capture
+    # ActiveJob extension for background job error capture and Pulse tracing
     module ActiveJobExtension
       extend ActiveSupport::Concern
 
@@ -333,6 +446,9 @@ module BrainzLab
       private
 
       def brainzlab_around_perform
+        started_at = Time.now.utc
+
+        # Set context for Reflex and Recall
         BrainzLab::Context.current.set_context(
           job_class: self.class.name,
           job_id: job_id,
@@ -347,9 +463,95 @@ module BrainzLab
           data: { job_id: job_id, queue: queue_name }
         )
 
-        yield
+        # Start Pulse trace for job if enabled
+        should_trace = BrainzLab.configuration.pulse_enabled
+        if should_trace
+          Thread.current[:brainzlab_pulse_spans] = []
+          Thread.current[:brainzlab_pulse_breakdown] = nil
+          BrainzLab::Pulse.start_trace(self.class.name, kind: "job")
+        end
+
+        error_occurred = nil
+        begin
+          yield
+        rescue StandardError => e
+          error_occurred = e
+          raise
+        end
       ensure
+        # Record Pulse trace for job
+        if should_trace
+          record_pulse_job_trace(started_at, error_occurred)
+        end
+
         BrainzLab::Context.clear!
+      end
+
+      def record_pulse_job_trace(started_at, error = nil)
+        ended_at = Time.now.utc
+
+        # Collect spans from instrumentation
+        spans = Thread.current[:brainzlab_pulse_spans] || []
+        breakdown = Thread.current[:brainzlab_pulse_breakdown] || {}
+
+        # Format spans for API
+        formatted_spans = spans.map do |span|
+          {
+            span_id: span[:span_id],
+            name: span[:name],
+            kind: span[:kind],
+            started_at: format_job_timestamp(span[:started_at]),
+            ended_at: format_job_timestamp(span[:ended_at]),
+            duration_ms: span[:duration_ms],
+            data: span[:data]
+          }
+        end
+
+        # Calculate queue wait time if available
+        queue_wait_ms = nil
+        if respond_to?(:scheduled_at) && scheduled_at
+          queue_wait_ms = ((started_at - scheduled_at) * 1000).round(2)
+        elsif respond_to?(:enqueued_at) && enqueued_at
+          queue_wait_ms = ((started_at - enqueued_at) * 1000).round(2)
+        end
+
+        BrainzLab::Pulse.record_trace(
+          self.class.name,
+          kind: "job",
+          started_at: started_at,
+          ended_at: ended_at,
+          job_class: self.class.name,
+          job_id: job_id,
+          queue: queue_name,
+          error: error.present?,
+          error_class: error&.class&.name,
+          error_message: error&.message,
+          db_ms: breakdown[:db_ms],
+          queue_wait_ms: queue_wait_ms,
+          executions: executions,
+          spans: formatted_spans
+        )
+      rescue StandardError => e
+        BrainzLab.configuration.logger&.error("[BrainzLab::Pulse] Failed to record job trace: #{e.message}")
+      ensure
+        # Clean up thread locals
+        Thread.current[:brainzlab_pulse_spans] = nil
+        Thread.current[:brainzlab_pulse_breakdown] = nil
+      end
+
+      def format_job_timestamp(ts)
+        return nil unless ts
+
+        case ts
+        when Time, DateTime
+          ts.utc.iso8601(3)
+        when Float, Integer
+          Time.at(ts).utc.iso8601(3)
+        when String
+          ts
+        else
+          ts.to_s
+        end
       end
 
       def brainzlab_rescue_job(exception)

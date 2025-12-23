@@ -27,6 +27,9 @@ module BrainzLab
         def request(req, body = nil, &block)
           return super unless should_track?
 
+          # Inject distributed tracing context into outgoing request headers
+          inject_trace_context(req)
+
           url = build_url(req)
           method = req.method
           started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -39,6 +42,21 @@ module BrainzLab
             track_request(method, url, nil, started_at, e.class.name)
             raise
           end
+        end
+
+        def inject_trace_context(req)
+          return unless BrainzLab.configuration.pulse_enabled
+
+          # Build headers hash and inject trace context
+          headers = {}
+          BrainzLab::Pulse.inject(headers, format: :all)
+
+          # Apply headers to request
+          headers.each do |key, value|
+            req[key] = value
+          end
+        rescue StandardError => e
+          BrainzLab.debug_log("Failed to inject trace context: #{e.message}")
         end
 
         private
