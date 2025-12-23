@@ -308,4 +308,4 @@ Full documentation: [docs.brainzlab.ai](https://docs.brainzlab.ai)
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+Ossassy License - see [LICENSE](LICENSE) for details.
