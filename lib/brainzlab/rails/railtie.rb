@@ -257,6 +257,10 @@ module BrainzLab
         raise
       ensure
         # Finish Pulse trace for successful requests
+        # Debug logging
+        if ENV["BRAINZLAB_DEBUG"] == "true"
+          Rails.logger.info "[BrainzLab::Middleware] Path: #{request.path}, should_trace: #{should_trace}, exception: #{$!.class rescue 'nil'}, status: #{status.inspect}"
+        end
         if should_trace && !$!
           record_pulse_trace(request, started_at, status)
         end

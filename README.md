@@ -2,6 +2,7 @@
 
 [![Gem Version](https://badge.fury.io/rb/brainzlab.svg)](https://rubygems.org/gems/brainzlab)
 [![CI](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-brainzlab.ai-orange)](https://docs.brainzlab.ai/sdk/ruby/installation)
 [![License](https://img.shields.io/badge/license-Ossassy-blue.svg)](LICENSE)
 
 Official Ruby SDK for [BrainzLab](https://brainzlab.ai) - the complete observability platform.
@@ -327,6 +328,13 @@ Full documentation: [docs.brainzlab.ai](https://docs.brainzlab.ai)
 - [Recall (Logging)](https://docs.brainzlab.ai/sdk/ruby/recall)
 - [Reflex (Errors)](https://docs.brainzlab.ai/sdk/ruby/reflex)
 - [Pulse (APM)](https://docs.brainzlab.ai/sdk/ruby/pulse)
+
+## Related
+
+- [Recall](https://github.com/brainz-lab/recall) - Logging service
+- [Reflex](https://github.com/brainz-lab/reflex) - Error tracking service
+- [Pulse](https://github.com/brainz-lab/pulse) - APM service
+- [Stack](https://github.com/brainz-lab/stack) - Self-hosted deployment
 
 ## License
 
