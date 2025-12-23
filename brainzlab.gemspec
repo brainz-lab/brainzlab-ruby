@@ -12,7 +12,7 @@ Gem::Specification.new do |spec|
   spec.description = "Official Ruby SDK for BrainzLab observability platform. Includes Recall (structured logging), Reflex (error tracking), and Pulse (APM with distributed tracing). Auto-instruments Rails, Sidekiq, GraphQL, Redis, and more."
   spec.homepage = "https://brainzlab.ai"
   spec.license = "Nonstandard"
-  spec.required_ruby_version = ">= 3.1.0"
+  spec.required_ruby_version = ">= 3.2.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/brainz-lab/brainzlab-ruby"
