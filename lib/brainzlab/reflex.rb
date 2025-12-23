@@ -241,16 +241,27 @@ module BrainzLab
       end
 
       def parse_backtrace_line(line)
-        # Parse "path/to/file.rb:42:in `method_name'"
-        if line =~ /\A(.+):(\d+):in `(.+)'\z/
+        # Parse various Ruby backtrace formats:
+        # - "path/to/file.rb:42:in `method_name'"  (backtick + single quote)
+        # - "path/to/file.rb:42:in 'method_name'"  (single quotes)
+        # - "path/to/file.rb:42"                   (no method)
+        if line =~ /\A(.+):(\d+):in [`'](.+)'?\z/
           {
             file: $1,
             line: $2.to_i,
             function: $3,
             in_app: in_app_frame?($1)
           }
+        elsif line =~ /\A(.+):(\d+)\z/
+          {
+            file: $1,
+            line: $2.to_i,
+            function: nil,
+            in_app: in_app_frame?($1)
+          }
         else
-          { raw: line }
+          # Still store file for display even if format is unexpected
+          { file: line, line: nil, function: nil, in_app: false }
         end
       end
 
@@ -258,8 +269,12 @@ module BrainzLab
         return false if path.nil?
         return false if path.include?("vendor/")
         return false if path.include?("/gems/")
+        return false if path.include?("/ruby/")
 
-        path.start_with?("app/", "lib/", "./app/", "./lib/")
+        # Match both relative and absolute paths containing app/ or lib/
+        path.start_with?("app/", "lib/", "./app/", "./lib/") ||
+          path.include?("/app/") ||
+          path.include?("/lib/")
       end
 
       def filter_params(params)

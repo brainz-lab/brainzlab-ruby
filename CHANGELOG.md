@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2025-12-23
+
+### Fixed
+
+- **Reflex** - Improved backtrace parsing
+  - Handle different Ruby backtrace formats (backtick+quote and single quotes)
+  - Parse backtrace lines without method names
+  - Better `in_app` frame detection for absolute paths
+
 ## [0.1.0] - 2025-01-01
 
 ### Added
