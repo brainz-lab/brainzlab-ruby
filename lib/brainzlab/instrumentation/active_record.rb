@@ -61,7 +61,7 @@ module BrainzLab
               sql: truncate_sql(sql),
               duration_ms: duration,
               cached: payload[:cached] || false,
-              connection_name: payload[:connection]&.pool&.connection_class&.name
+              connection_name: extract_connection_name(payload[:connection])
             }.compact
           )
         rescue StandardError => e
@@ -93,6 +93,23 @@ module BrainzLab
           return true if payload[:sql].nil? || payload[:sql].empty?
 
           false
+        end
+
+        def extract_connection_name(connection)
+          return nil unless connection
+
+          # Rails 8.1+ uses db_config.name on the pool
+          # Older versions used connection_class but that's removed in Rails 8.1
+          if connection.respond_to?(:pool)
+            pool = connection.pool
+            if pool.respond_to?(:db_config) && pool.db_config.respond_to?(:name)
+              pool.db_config.name
+            end
+          elsif connection.respond_to?(:db_config) && connection.db_config.respond_to?(:name)
+            connection.db_config.name
+          end
+        rescue StandardError
+          nil
         end
 
         def truncate_sql(sql)

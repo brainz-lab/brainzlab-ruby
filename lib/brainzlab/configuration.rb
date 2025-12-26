@@ -45,6 +45,11 @@ module BrainzLab
                   :flux_auto_provision,
                   :flux_buffer_size,
                   :flux_flush_interval,
+                  :signal_enabled,
+                  :signal_url,
+                  :signal_api_key,
+                  :signal_master_key,
+                  :signal_auto_provision,
                   :scrub_fields,
                   :logger,
                   :instrument_http,
@@ -125,6 +130,13 @@ module BrainzLab
       @flux_buffer_size = 100
       @flux_flush_interval = 5
 
+      # Signal settings
+      @signal_enabled = true
+      @signal_url = ENV["SIGNAL_URL"] || "https://signal.brainzlab.ai"
+      @signal_api_key = ENV["SIGNAL_API_KEY"]
+      @signal_master_key = ENV["SIGNAL_MASTER_KEY"]
+      @signal_auto_provision = true
+
       # Filtering
       @scrub_fields = %i[password password_confirmation token api_key secret]
 
@@ -193,6 +205,15 @@ module BrainzLab
 
     def flux_auth_key
       flux_ingest_key || flux_api_key || secret_key
+    end
+
+    def signal_valid?
+      key = signal_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def signal_auth_key
+      signal_api_key || secret_key
     end
 
     def debug?

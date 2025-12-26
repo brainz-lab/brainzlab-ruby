@@ -569,9 +569,9 @@ module BrainzLab
       end
     end
 
-    # Sidekiq error handler
+    # Sidekiq error handler - Sidekiq 7.x+ requires 3 arguments
     class SidekiqErrorHandler
-      def call(exception, context)
+      def call(exception, context, _config = nil)
         BrainzLab::Reflex.capture(exception,
           tags: { type: "sidekiq" },
           extra: {
