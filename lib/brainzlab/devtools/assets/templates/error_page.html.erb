@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= h(@exception.class.name) %> - BrainzLab DevTools</title>
+
+  <!-- CDN Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Highlight.js for syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/ruby.min.js"></script>
+
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #141414;
+      --bg-tertiary: #1a1a1a;
+      --bg-card: #1e1e1e;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --border-color: #27272a;
+      --accent: #f97316;
+      --accent-hover: #fb923c;
+      --error: #ef4444;
+      --error-bg: rgba(239, 68, 68, 0.1);
+      --success: #22c55e;
+      --warning: #eab308;
+      --info: #3b82f6;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Consolas', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header */
+    .error-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      padding: 2rem;
+      background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%);
+      border-radius: 16px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 24px rgba(239, 68, 68, 0.3);
+    }
+
+    .error-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .error-icon svg {
+      width: 28px;
+      height: 28px;
+      color: white;
+    }
+
+    .error-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .error-type {
+      font-size: 0.875rem;
+      font-weight: 500;
+      opacity: 0.9;
+      margin-bottom: 0.25rem;
+      font-family: var(--font-mono);
+    }
+
+    .error-message {
+      font-size: 1.25rem;
+      font-weight: 600;
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .error-meta {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      font-size: 0.8125rem;
+      opacity: 0.8;
+    }
+
+    .error-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    /* AI Copy Button */
+    .ai-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .ai-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      color: white;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-family: var(--font-sans);
+    }
+
+    .ai-btn:hover {
+      background: rgba(255,255,255,0.25);
+      transform: translateY(-1px);
+    }
+
+    .ai-btn.copied {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .ai-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+    }
+
+    .card-title {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .card-badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.625rem;
+      background: var(--bg-secondary);
+      border-radius: 9999px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .card-body {
+      padding: 1.25rem;
+    }
+
+    /* Source Code */
+    .source-file {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+    }
+
+    .source-file svg {
+      width: 16px;
+      height: 16px;
+      color: var(--accent);
+    }
+
+    .source-code {
+      background: var(--bg-primary);
+      padding: 0;
+      margin: 0;
+      overflow-x: auto;
+    }
+
+    .source-line {
+      display: flex;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      line-height: 1.7;
+      border-left: 3px solid transparent;
+    }
+
+    .source-line:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .source-line.highlight {
+      background: var(--error-bg);
+      border-left-color: var(--error);
+    }
+
+    .line-number {
+      min-width: 4rem;
+      padding: 0 1rem;
+      text-align: right;
+      color: var(--text-muted);
+      user-select: none;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+    }
+
+    .line-content {
+      padding: 0 1rem;
+      white-space: pre;
+      color: var(--text-primary);
+    }
+
+    /* Backtrace */
+    .backtrace {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .frame {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      transition: background 0.1s ease;
+    }
+
+    .frame:last-child {
+      border-bottom: none;
+    }
+
+    .frame:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .frame.in-app {
+      background: rgba(249, 115, 22, 0.05);
+    }
+
+    .frame.in-app:hover {
+      background: rgba(249, 115, 22, 0.1);
+    }
+
+    .frame-number {
+      min-width: 2rem;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .frame-location {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .frame-file {
+      color: var(--text-secondary);
+      word-break: break-all;
+    }
+
+    .frame.in-app .frame-file {
+      color: var(--accent);
+    }
+
+    .frame-line {
+      color: var(--success);
+    }
+
+    .frame-method {
+      color: var(--text-muted);
+      margin-left: 0.5rem;
+    }
+
+    /* Info Grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+    }
+
+    .info-table {
+      width: 100%;
+      font-size: 0.875rem;
+    }
+
+    .info-table tr {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .info-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .info-table th {
+      width: 120px;
+      padding: 0.625rem 0;
+      text-align: left;
+      font-weight: 500;
+      color: var(--text-muted);
+      vertical-align: top;
+    }
+
+    .info-table td {
+      padding: 0.625rem 0;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      color: var(--text-primary);
+      word-break: break-all;
+    }
+
+    /* Params */
+    .params-block {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      color: var(--text-secondary);
+    }
+
+    /* Query Table */
+    .query-table {
+      width: 100%;
+      font-size: 0.8125rem;
+    }
+
+    .query-table th {
+      text-align: left;
+      padding: 0.75rem;
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .query-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: top;
+    }
+
+    .query-duration {
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+
+    .query-duration.slow {
+      color: var(--warning);
+    }
+
+    .query-sql {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      max-width: 500px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8125rem;
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Tooltip */
+    .tooltip {
+      position: fixed;
+      padding: 0.5rem 0.75rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--text-primary);
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .tooltip.visible {
+      opacity: 1;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Error Header -->
+    <div class="error-header">
+      <div class="error-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <div class="error-content">
+        <div class="error-type"><%= h(@exception.class.name) %></div>
+        <div class="error-message"><%= h(@exception.message) %></div>
+        <div class="error-meta">
+          <span class="error-meta-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <%= h(@request[:method]) %> <%= h(@request[:path]) %>
+          </span>
+          <%- if @context[:controller] -%>
+          <span class="error-meta-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+            </svg>
+            <%= h(@context[:controller]) %>#<%= h(@context[:action]) %>
+          </span>
+          <%- end -%>
+        </div>
+
+        <!-- AI Copy Actions -->
+        <div class="ai-actions">
+          <button class="ai-btn" onclick="copyForAI()" id="copyAiBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            </svg>
+            <span>Copy for AI Assistant</span>
+          </button>
+          <button class="ai-btn" onclick="copyStackTrace()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="16 18 22 12 16 6"/>
+              <polyline points="8 6 2 12 8 18"/>
+            </svg>
+            <span>Copy Stack Trace</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <%- if @source_extract -%>
+    <!-- Source Code -->
+    <div class="card">
+      <div class="source-file">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <%= h(@source_extract[:file]) %>:<%= @source_extract[:line_number] %>
+      </div>
+      <div class="source-code">
+        <%- @source_extract[:lines].each do |line| -%>
+        <div class="source-line<%= ' highlight' if line[:highlight] %>">
+          <span class="line-number"><%= line[:number] %></span>
+          <code class="line-content"><%= h(line[:content]) %></code>
+        </div>
+        <%- end -%>
+      </div>
+    </div>
+    <%- end -%>
+
+    <!-- Backtrace -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Stack Trace</span>
+        <span class="card-badge"><%= @backtrace.length %> frames</span>
+      </div>
+      <div class="backtrace">
+        <%- @backtrace.each_with_index do |frame, idx| -%>
+        <div class="frame<%= ' in-app' if frame[:in_app] %>">
+          <span class="frame-number"><%= idx + 1 %></span>
+          <span class="frame-location">
+            <span class="frame-file"><%= h(frame[:file]) %></span><span class="frame-line">:<%= frame[:line] %></span>
+            <%- if frame[:function] -%>
+            <span class="frame-method">in `<%= h(frame[:function]) %>'</span>
+            <%- end -%>
+          </span>
+        </div>
+        <%- end -%>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <!-- Request Info -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Request</span>
+        </div>
+        <div class="card-body">
+          <table class="info-table">
+            <tr>
+              <th>Method</th>
+              <td><%= h(@request[:method]) %></td>
+            </tr>
+            <tr>
+              <th>Path</th>
+              <td><%= h(@request[:path]) %></td>
+            </tr>
+            <tr>
+              <th>URL</th>
+              <td><%= h(@request[:url]) %></td>
+            </tr>
+            <%- if @context[:request_id] -%>
+            <tr>
+              <th>Request ID</th>
+              <td><%= h(@context[:request_id]) %></td>
+            </tr>
+            <%- end -%>
+          </table>
+
+          <%- if @request[:params] && !@request[:params].empty? -%>
+          <h4 style="margin: 1rem 0 0.5rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Parameters</h4>
+          <div class="params-block"><%= format_params(@request[:params]) %></div>
+          <%- end -%>
+        </div>
+      </div>
+
+      <!-- Environment -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Environment</span>
+        </div>
+        <div class="card-body">
+          <table class="info-table">
+            <tr>
+              <th>Rails</th>
+              <td><%= h(@environment[:rails_version]) %></td>
+            </tr>
+            <tr>
+              <th>Ruby</th>
+              <td><%= h(@environment[:ruby_version]) %></td>
+            </tr>
+            <tr>
+              <th>Environment</th>
+              <td><%= h(@environment[:env]) %></td>
+            </tr>
+            <tr>
+              <th>Server</th>
+              <td><%= h(@environment[:server]) %></td>
+            </tr>
+            <tr>
+              <th>PID</th>
+              <td><%= @environment[:pid] %></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <%- if @sql_queries && !@sql_queries.empty? -%>
+    <!-- SQL Queries -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">SQL Queries Before Error</span>
+        <span class="card-badge"><%= @sql_queries.length %> queries</span>
+      </div>
+      <div class="card-body" style="padding: 0;">
+        <table class="query-table">
+          <thead>
+            <tr>
+              <th width="80">Duration</th>
+              <th width="120">Name</th>
+              <th>Query</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%- @sql_queries.each do |query| -%>
+            <tr>
+              <td class="query-duration<%= ' slow' if (query[:duration] || 0) > 50 %>">
+                <%= sprintf('%.2f', query[:duration] || 0) %>ms
+              </td>
+              <td><%= h(query[:name] || 'SQL') %></td>
+              <td class="query-sql" title="<%= h(query[:sql]) %>">
+                <%= h(truncate(query[:sql], 120)) %>
+              </td>
+            </tr>
+            <%- end -%>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <%- end -%>
+
+    <%- if @context[:user] && !@context[:user].empty? -%>
+    <!-- User Context -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">User Context</span>
+      </div>
+      <div class="card-body">
+        <table class="info-table">
+          <%- @context[:user].each do |key, value| -%>
+          <tr>
+            <th><%= h(key) %></th>
+            <td><%= h(value) %></td>
+          </tr>
+          <%- end -%>
+        </table>
+      </div>
+    </div>
+    <%- end -%>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>
+        <strong>BrainzLab DevTools</strong> &middot;
+        <a href="https://brainzlab.ai" target="_blank">brainzlab.ai</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Hidden data for AI copy -->
+  <script id="error-data" type="application/json">
+  <%= {
+    error_class: @exception.class.name,
+    message: @exception.message,
+    file: @source_extract&.dig(:file),
+    line: @source_extract&.dig(:line_number),
+    source_context: @source_extract&.dig(:lines)&.map { |l| "#{l[:number]}: #{l[:content]}" }&.join("\n"),
+    backtrace: @backtrace.first(15).map { |f| "#{f[:file]}:#{f[:line]}#{f[:function] ? " in `#{f[:function]}'" : ''}" },
+    request: {
+      method: @request[:method],
+      path: @request[:path],
+      controller: @context[:controller],
+      action: @context[:action]
+    },
+    rails_version: @environment[:rails_version],
+    ruby_version: @environment[:ruby_version],
+    environment: @environment[:env]
+  }.to_json %>
+  </script>
+
+  <script>
+    // Syntax highlighting
+    document.querySelectorAll('.line-content').forEach(el => {
+      hljs.highlightElement(el);
+    });
+
+    function copyForAI() {
+      const data = JSON.parse(document.getElementById('error-data').textContent);
+
+      const prompt = `I'm getting this error in my Rails application. Can you help me fix it?
+
+## Error
+**${data.error_class}**: ${data.message}
+
+## Location
+File: \`${data.file}:${data.line}\`
+
+## Source Code
+\`\`\`ruby
+${data.source_context || 'N/A'}
+\`\`\`
+
+## Stack Trace (top 15 frames)
+\`\`\`
+${data.backtrace.join('\n')}
+\`\`\`
+
+## Request Context
+- **Method**: ${data.request.method}
+- **Path**: ${data.request.path}
+- **Controller**: ${data.request.controller}#${data.request.action}
+
+## Environment
+- Rails ${data.rails_version}
+- Ruby ${data.ruby_version}
+- Environment: ${data.environment}
+
+Please analyze this error and suggest:
+1. What's causing this error
+2. How to fix it
+3. Any best practices to prevent similar issues`;
+
+      navigator.clipboard.writeText(prompt).then(() => {
+        const btn = document.getElementById('copyAiBtn');
+        btn.classList.add('copied');
+        btn.querySelector('span').textContent = 'Copied!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.querySelector('span').textContent = 'Copy for AI Assistant';
+        }, 2000);
+      });
+    }
+
+    function copyStackTrace() {
+      const data = JSON.parse(document.getElementById('error-data').textContent);
+      const trace = `${data.error_class}: ${data.message}\n\n${data.backtrace.join('\n')}`;
+      navigator.clipboard.writeText(trace);
+    }
+  </script>
+</body>
+</html>

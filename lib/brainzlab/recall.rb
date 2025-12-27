@@ -30,7 +30,7 @@ module BrainzLab
 
       def log(level, message, **data)
         config = BrainzLab.configuration
-        return unless config.recall_enabled
+        return unless config.recall_effectively_enabled?
 
         # Auto-provision project on first log if app_name is configured
         ensure_provisioned!

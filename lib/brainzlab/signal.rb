@@ -120,7 +120,7 @@ module BrainzLab
       private
 
       def enabled?
-        BrainzLab.configuration.signal_enabled
+        BrainzLab.configuration.signal_effectively_enabled?
       end
 
       def context_data

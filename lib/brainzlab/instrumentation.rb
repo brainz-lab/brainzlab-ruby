@@ -39,6 +39,22 @@ module BrainzLab
 
         # Grape API instrumentation
         install_grape! if config.instrument_grape
+
+        # Modern job queue instrumentation
+        install_solid_queue! if config.instrument_solid_queue
+        install_good_job! if config.instrument_good_job
+        install_resque! if config.instrument_resque
+
+        # Additional HTTP clients
+        install_excon! if config.instrument_excon
+        install_typhoeus! if config.instrument_typhoeus
+
+        # Caching
+        install_dalli! if config.instrument_dalli
+
+        # Cloud & Payment
+        install_aws! if config.instrument_aws
+        install_stripe! if config.instrument_stripe
       end
 
       def install_net_http!
@@ -119,6 +135,62 @@ module BrainzLab
 
         require_relative "instrumentation/grape"
         GrapeInstrumentation.install!
+      end
+
+      def install_solid_queue!
+        return unless defined?(::SolidQueue)
+
+        require_relative "instrumentation/solid_queue"
+        SolidQueueInstrumentation.install!
+      end
+
+      def install_good_job!
+        return unless defined?(::GoodJob)
+
+        require_relative "instrumentation/good_job"
+        GoodJobInstrumentation.install!
+      end
+
+      def install_resque!
+        return unless defined?(::Resque)
+
+        require_relative "instrumentation/resque"
+        ResqueInstrumentation.install!
+      end
+
+      def install_excon!
+        return unless defined?(::Excon)
+
+        require_relative "instrumentation/excon"
+        ExconInstrumentation.install!
+      end
+
+      def install_typhoeus!
+        return unless defined?(::Typhoeus)
+
+        require_relative "instrumentation/typhoeus"
+        TyphoeusInstrumentation.install!
+      end
+
+      def install_dalli!
+        return unless defined?(::Dalli::Client)
+
+        require_relative "instrumentation/dalli"
+        DalliInstrumentation.install!
+      end
+
+      def install_aws!
+        return unless defined?(::Aws)
+
+        require_relative "instrumentation/aws"
+        AWSInstrumentation.install!
+      end
+
+      def install_stripe!
+        return unless defined?(::Stripe)
+
+        require_relative "instrumentation/stripe"
+        StripeInstrumentation.install!
       end
 
       # Manual installation methods for lazy-loaded libraries

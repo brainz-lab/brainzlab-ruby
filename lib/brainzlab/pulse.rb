@@ -160,7 +160,7 @@ module BrainzLab
       end
 
       def enabled?
-        BrainzLab.configuration.pulse_enabled
+        BrainzLab.configuration.pulse_effectively_enabled?
       end
 
       def build_trace_payload(name, kind, started_at, ended_at, attributes)

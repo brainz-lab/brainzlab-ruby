@@ -65,6 +65,40 @@ module BrainzLab
                   :vision_auto_provision,
                   :vision_default_model,
                   :vision_default_browser_provider,
+                  :cortex_enabled,
+                  :cortex_url,
+                  :cortex_api_key,
+                  :cortex_master_key,
+                  :cortex_auto_provision,
+                  :cortex_cache_enabled,
+                  :cortex_cache_ttl,
+                  :cortex_default_context,
+                  :beacon_enabled,
+                  :beacon_url,
+                  :beacon_api_key,
+                  :beacon_master_key,
+                  :beacon_auto_provision,
+                  :nerve_enabled,
+                  :nerve_url,
+                  :nerve_api_key,
+                  :nerve_master_key,
+                  :nerve_auto_provision,
+                  :dendrite_enabled,
+                  :dendrite_url,
+                  :dendrite_api_key,
+                  :dendrite_master_key,
+                  :dendrite_auto_provision,
+                  :sentinel_enabled,
+                  :sentinel_url,
+                  :sentinel_api_key,
+                  :sentinel_agent_key,
+                  :sentinel_master_key,
+                  :sentinel_auto_provision,
+                  :synapse_enabled,
+                  :synapse_url,
+                  :synapse_api_key,
+                  :synapse_master_key,
+                  :synapse_auto_provision,
                   :scrub_fields,
                   :logger,
                   :instrument_http,
@@ -77,13 +111,39 @@ module BrainzLab
                   :instrument_action_mailer,
                   :instrument_delayed_job,
                   :instrument_grape,
+                  :instrument_solid_queue,
+                  :instrument_good_job,
+                  :instrument_resque,
+                  :instrument_excon,
+                  :instrument_typhoeus,
+                  :instrument_dalli,
+                  :instrument_aws,
+                  :instrument_stripe,
                   :http_ignore_hosts,
                   :redis_ignore_commands,
                   :log_formatter_enabled,
                   :log_formatter_colors,
                   :log_formatter_hide_assets,
                   :log_formatter_compact_assets,
-                  :log_formatter_show_params
+                  :log_formatter_show_params,
+                  :disable_self_tracking,
+                  :devtools_enabled,
+                  :devtools_error_page_enabled,
+                  :devtools_debug_panel_enabled,
+                  :devtools_allowed_environments,
+                  :devtools_allowed_ips,
+                  :devtools_asset_path,
+                  :devtools_panel_position,
+                  :devtools_expand_by_default
+
+    # Services that should not track themselves to avoid circular dependencies
+    SELF_TRACKING_SERVICES = {
+      "recall" => :recall_enabled,
+      "reflex" => :reflex_enabled,
+      "pulse" => :pulse_enabled,
+      "flux" => :flux_enabled,
+      "signal" => :signal_enabled
+    }.freeze
 
     def initialize
       # Authentication
@@ -103,6 +163,10 @@ module BrainzLab
 
       # Debug mode - enables verbose logging
       @debug = ENV["BRAINZLAB_DEBUG"] == "true"
+
+      # Disable self-tracking - prevents services from tracking to themselves
+      # e.g., Recall won't log to itself, Reflex won't track errors to itself
+      @disable_self_tracking = ENV.fetch("BRAINZLAB_DISABLE_SELF_TRACKING", "true") == "true"
 
       # Recall settings
       @recall_enabled = true
@@ -171,6 +235,52 @@ module BrainzLab
       @vision_default_model = ENV["VISION_DEFAULT_MODEL"] || "claude-sonnet-4"
       @vision_default_browser_provider = ENV["VISION_DEFAULT_BROWSER_PROVIDER"] || "local"
 
+      # Cortex settings (feature flags)
+      @cortex_enabled = true
+      @cortex_url = ENV["CORTEX_URL"] || "https://cortex.brainzlab.ai"
+      @cortex_api_key = ENV["CORTEX_API_KEY"]
+      @cortex_master_key = ENV["CORTEX_MASTER_KEY"]
+      @cortex_auto_provision = true
+      @cortex_cache_enabled = true
+      @cortex_cache_ttl = 60  # 1 minute
+      @cortex_default_context = {}
+
+      # Beacon settings (uptime monitoring)
+      @beacon_enabled = true
+      @beacon_url = ENV["BEACON_URL"] || "https://beacon.brainzlab.ai"
+      @beacon_api_key = ENV["BEACON_API_KEY"]
+      @beacon_master_key = ENV["BEACON_MASTER_KEY"]
+      @beacon_auto_provision = true
+
+      # Nerve settings (job monitoring)
+      @nerve_enabled = true
+      @nerve_url = ENV["NERVE_URL"] || "https://nerve.brainzlab.ai"
+      @nerve_api_key = ENV["NERVE_API_KEY"]
+      @nerve_master_key = ENV["NERVE_MASTER_KEY"]
+      @nerve_auto_provision = true
+
+      # Dendrite settings (AI documentation)
+      @dendrite_enabled = true
+      @dendrite_url = ENV["DENDRITE_URL"] || "https://dendrite.brainzlab.ai"
+      @dendrite_api_key = ENV["DENDRITE_API_KEY"]
+      @dendrite_master_key = ENV["DENDRITE_MASTER_KEY"]
+      @dendrite_auto_provision = true
+
+      # Sentinel settings (host monitoring)
+      @sentinel_enabled = true
+      @sentinel_url = ENV["SENTINEL_URL"] || "https://sentinel.brainzlab.ai"
+      @sentinel_api_key = ENV["SENTINEL_API_KEY"]
+      @sentinel_agent_key = ENV["SENTINEL_AGENT_KEY"]
+      @sentinel_master_key = ENV["SENTINEL_MASTER_KEY"]
+      @sentinel_auto_provision = true
+
+      # Synapse settings (AI development orchestration)
+      @synapse_enabled = true
+      @synapse_url = ENV["SYNAPSE_URL"] || "https://synapse.brainzlab.ai"
+      @synapse_api_key = ENV["SYNAPSE_API_KEY"]
+      @synapse_master_key = ENV["SYNAPSE_MASTER_KEY"]
+      @synapse_auto_provision = true
+
       # Filtering
       @scrub_fields = %i[password password_confirmation token api_key secret]
 
@@ -188,6 +298,14 @@ module BrainzLab
       @instrument_action_mailer = true  # ActionMailer instrumentation
       @instrument_delayed_job = true  # Delayed::Job instrumentation
       @instrument_grape = true  # Grape API instrumentation
+      @instrument_solid_queue = true  # Solid Queue job instrumentation
+      @instrument_good_job = true  # GoodJob instrumentation
+      @instrument_resque = true  # Resque instrumentation
+      @instrument_excon = true  # Excon HTTP client instrumentation
+      @instrument_typhoeus = true  # Typhoeus HTTP client instrumentation
+      @instrument_dalli = true  # Dalli/Memcached instrumentation
+      @instrument_aws = true  # AWS SDK instrumentation
+      @instrument_stripe = true  # Stripe API instrumentation
       @http_ignore_hosts = %w[localhost 127.0.0.1]
       @redis_ignore_commands = %w[ping info]  # Commands to skip tracking
 
@@ -197,6 +315,16 @@ module BrainzLab
       @log_formatter_hide_assets = false
       @log_formatter_compact_assets = true
       @log_formatter_show_params = true
+
+      # DevTools settings (development error page and debug panel)
+      @devtools_enabled = true
+      @devtools_error_page_enabled = true
+      @devtools_debug_panel_enabled = true
+      @devtools_allowed_environments = %w[development test]
+      @devtools_allowed_ips = ["127.0.0.1", "::1", "172.16.0.0/12", "192.168.0.0/16", "10.0.0.0/8"]
+      @devtools_asset_path = "/__brainzlab__"
+      @devtools_panel_position = "bottom-right"
+      @devtools_expand_by_default = false
     end
 
     def recall_min_level=(level)
@@ -268,8 +396,112 @@ module BrainzLab
       vision_ingest_key || vision_api_key || secret_key
     end
 
+    def beacon_valid?
+      key = beacon_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def beacon_auth_key
+      beacon_api_key || secret_key
+    end
+
+    def nerve_valid?
+      key = nerve_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def nerve_auth_key
+      nerve_api_key || secret_key
+    end
+
+    def cortex_valid?
+      key = cortex_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def cortex_auth_key
+      cortex_api_key || secret_key
+    end
+
+    def dendrite_valid?
+      key = dendrite_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def dendrite_auth_key
+      dendrite_api_key || secret_key
+    end
+
+    def sentinel_valid?
+      key = sentinel_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def sentinel_auth_key
+      sentinel_api_key || secret_key
+    end
+
+    def synapse_valid?
+      key = synapse_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def synapse_auth_key
+      synapse_api_key || secret_key
+    end
+
     def debug?
       @debug == true
+    end
+
+    # Check if recall is effectively enabled (considering self-tracking)
+    def recall_effectively_enabled?
+      return false unless @recall_enabled
+      return true unless @disable_self_tracking
+
+      # Disable if this is the Recall service itself
+      normalized_app_name = @app_name.to_s.downcase.strip
+      normalized_app_name != "recall"
+    end
+
+    # Check if reflex is effectively enabled (considering self-tracking)
+    def reflex_effectively_enabled?
+      return false unless @reflex_enabled
+      return true unless @disable_self_tracking
+
+      # Disable if this is the Reflex service itself
+      normalized_app_name = @app_name.to_s.downcase.strip
+      normalized_app_name != "reflex"
+    end
+
+    # Check if pulse is effectively enabled (considering self-tracking)
+    def pulse_effectively_enabled?
+      return false unless @pulse_enabled
+      return true unless @disable_self_tracking
+
+      # Disable if this is the Pulse service itself
+      normalized_app_name = @app_name.to_s.downcase.strip
+      normalized_app_name != "pulse"
+    end
+
+    # Check if flux is effectively enabled (considering self-tracking)
+    def flux_effectively_enabled?
+      return false unless @flux_enabled
+      return true unless @disable_self_tracking
+
+      # Disable if this is the Flux service itself
+      normalized_app_name = @app_name.to_s.downcase.strip
+      normalized_app_name != "flux"
+    end
+
+    # Check if signal is effectively enabled (considering self-tracking)
+    def signal_effectively_enabled?
+      return false unless @signal_enabled
+      return true unless @disable_self_tracking
+
+      # Disable if this is the Signal service itself
+      normalized_app_name = @app_name.to_s.downcase.strip
+      normalized_app_name != "signal"
     end
 
     def debug_log(message)

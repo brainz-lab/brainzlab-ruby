@@ -167,7 +167,7 @@ module BrainzLab
       private
 
       def enabled?
-        BrainzLab.configuration.flux_enabled
+        BrainzLab.configuration.flux_effectively_enabled?
       end
     end
   end

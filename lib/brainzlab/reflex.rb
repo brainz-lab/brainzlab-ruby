@@ -77,7 +77,7 @@ module BrainzLab
       private
 
       def enabled?
-        BrainzLab.configuration.reflex_enabled
+        BrainzLab.configuration.reflex_effectively_enabled?
       end
 
       def capture_disabled?

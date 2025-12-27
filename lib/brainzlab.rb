@@ -10,7 +10,14 @@ require_relative "brainzlab/flux"
 require_relative "brainzlab/signal"
 require_relative "brainzlab/vault"
 require_relative "brainzlab/vision"
+require_relative "brainzlab/cortex"
+require_relative "brainzlab/beacon"
+require_relative "brainzlab/nerve"
+require_relative "brainzlab/dendrite"
+require_relative "brainzlab/sentinel"
+require_relative "brainzlab/synapse"
 require_relative "brainzlab/instrumentation"
+require_relative "brainzlab/utilities"
 
 module BrainzLab
   class << self
@@ -32,6 +39,12 @@ module BrainzLab
       Signal.reset!
       Vault.reset!
       Vision.reset!
+      Cortex.reset!
+      Beacon.reset!
+      Nerve.reset!
+      Dendrite.reset!
+      Sentinel.reset!
+      Synapse.reset!
     end
 
     # Context management
@@ -139,6 +152,54 @@ module BrainzLab
         results[:services][:vision] = check_service_health(
           url: configuration.vision_url,
           name: 'Vision'
+        )
+      end
+
+      # Check Cortex
+      if configuration.cortex_enabled
+        results[:services][:cortex] = check_service_health(
+          url: configuration.cortex_url,
+          name: 'Cortex'
+        )
+      end
+
+      # Check Beacon
+      if configuration.beacon_enabled
+        results[:services][:beacon] = check_service_health(
+          url: configuration.beacon_url,
+          name: 'Beacon'
+        )
+      end
+
+      # Check Nerve
+      if configuration.nerve_enabled
+        results[:services][:nerve] = check_service_health(
+          url: configuration.nerve_url,
+          name: 'Nerve'
+        )
+      end
+
+      # Check Dendrite
+      if configuration.dendrite_enabled
+        results[:services][:dendrite] = check_service_health(
+          url: configuration.dendrite_url,
+          name: 'Dendrite'
+        )
+      end
+
+      # Check Sentinel
+      if configuration.sentinel_enabled
+        results[:services][:sentinel] = check_service_health(
+          url: configuration.sentinel_url,
+          name: 'Sentinel'
+        )
+      end
+
+      # Check Synapse
+      if configuration.synapse_enabled
+        results[:services][:synapse] = check_service_health(
+          url: configuration.synapse_url,
+          name: 'Synapse'
         )
       end
 

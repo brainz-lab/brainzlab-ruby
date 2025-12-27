@@ -1,0 +1,234 @@
+<div class="brainz-debug-panel<%= ' collapsed' unless @expand_by_default %>">
+  <!-- Toolbar (always visible) -->
+  <div class="brainz-debug-toolbar">
+    <img src="<%= asset_url('logo.svg') %>" alt="BrainzLab" class="brainz-debug-logo">
+
+    <span class="brainz-debug-stat <%= duration_class(@timing[:duration_ms]) %>">
+      <strong><%= format_duration(@timing[:duration_ms]) %></strong>
+    </span>
+
+    <span class="brainz-debug-stat<%= ' warning' if (@database[:total_count] || 0) > 20 %>">
+      <strong><%= @database[:total_count] || 0 %></strong> queries
+      (<%= format_duration(@database[:total_duration_ms]) %>)
+    </span>
+
+    <%- if @database[:n_plus_ones] && @database[:n_plus_ones].any? -%>
+    <span class="brainz-debug-stat error">
+      <strong><%= @database[:n_plus_ones].length %></strong> N+1
+    </span>
+    <%- end -%>
+
+    <span class="brainz-debug-stat<%= memory_class(@memory[:delta_mb]) %>">
+      <strong><%= sprintf('%.1f', @memory[:delta_mb] || 0) %>MB</strong>
+    </span>
+
+    <span class="brainz-debug-stat <%= status_class(@response[:status]) %>">
+      <strong><%= @response[:status] || 200 %></strong>
+    </span>
+
+    <span class="brainz-keyboard-hint">Ctrl+Shift+B</span>
+
+    <span class="brainz-debug-expand">
+      <svg width="12" height="12" viewBox="0 0 12 12">
+        <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="brainz-debug-tabs">
+    <button class="brainz-debug-tab active" data-tab="request">Request</button>
+    <button class="brainz-debug-tab" data-tab="queries">
+      Queries <span class="badge"><%= @database[:total_count] || 0 %></span>
+    </button>
+    <button class="brainz-debug-tab" data-tab="views">
+      Views <span class="badge"><%= (@views[:templates] || []).length %></span>
+    </button>
+    <button class="brainz-debug-tab" data-tab="logs">
+      Logs <span class="badge"><%= @logs.length %></span>
+    </button>
+    <button class="brainz-debug-tab" data-tab="timeline">Timeline</button>
+  </div>
+
+  <!-- Content Panes -->
+  <div class="brainz-debug-content">
+    <!-- Request Pane -->
+    <div class="brainz-debug-pane active" data-pane="request">
+      <table class="brainz-info-table">
+        <tr>
+          <th>Method</th>
+          <td><%= h(@request[:method]) %></td>
+        </tr>
+        <tr>
+          <th>Path</th>
+          <td><%= h(@request[:path]) %></td>
+        </tr>
+        <%- if @controller[:name] -%>
+        <tr>
+          <th>Controller</th>
+          <td><%= h(@controller[:name]) %>#<%= h(@controller[:action]) %></td>
+        </tr>
+        <%- end -%>
+        <tr>
+          <th>Status</th>
+          <td><span class="<%= status_class(@response[:status]) %>"><%= @response[:status] %></span></td>
+        </tr>
+        <tr>
+          <th>Request ID</th>
+          <td><code><%= h(@request[:request_id]) %></code></td>
+        </tr>
+        <tr>
+          <th>Duration</th>
+          <td><%= format_duration(@timing[:duration_ms]) %></td>
+        </tr>
+      </table>
+
+      <%- if @request[:params] && !@request[:params].empty? -%>
+      <h4 style="margin: 1rem 0 0.5rem; font-size: 0.8125rem; color: #718096;">Parameters</h4>
+      <pre class="brainz-code-block"><%= json_pretty(@request[:params]) %></pre>
+      <%- end -%>
+
+      <%- if @user && !@user.empty? -%>
+      <h4 style="margin: 1rem 0 0.5rem; font-size: 0.8125rem; color: #718096;">User</h4>
+      <pre class="brainz-code-block"><%= json_pretty(@user) %></pre>
+      <%- end -%>
+    </div>
+
+    <!-- Queries Pane -->
+    <div class="brainz-debug-pane" data-pane="queries">
+      <%- if @database[:n_plus_ones] && @database[:n_plus_ones].any? -%>
+      <div class="brainz-alert error">
+        <strong>N+1 Queries Detected</strong>
+        <%- @database[:n_plus_ones].each do |n1| -%>
+        <div class="brainz-n-plus-one">
+          <strong><%= n1[:count] %>x</strong> similar queries
+          (<%= format_duration(n1[:total_duration_ms]) %> total)
+          <%- if n1[:source] -%>
+          <span class="source">from <%= h(n1[:source]) %></span>
+          <%- end -%>
+          <code><%= h(truncate(n1[:sample_query], 120)) %></code>
+        </div>
+        <%- end -%>
+      </div>
+      <%- end -%>
+
+      <%- queries = @database[:queries] || [] -%>
+      <%- if queries.any? -%>
+      <table class="brainz-query-table">
+        <thead>
+          <tr>
+            <th width="80">Time</th>
+            <th width="100">Name</th>
+            <th>Query</th>
+            <th width="150">Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%- queries.each do |query| -%>
+          <tr class="brainz-query-row<%= ' cached' if query[:cached] %>">
+            <td class="brainz-query-duration <%= query_duration_class(query[:duration]) %>">
+              <%= sprintf('%.2f', query[:duration] || 0) %>ms
+            </td>
+            <td><%= h(query[:name] || 'SQL') %></td>
+            <td class="brainz-query-sql" title="<%= h(query[:sql]) %>">
+              <%= h(truncate(query[:sql], 80)) %>
+            </td>
+            <td style="font-size: 0.75rem; color: #A0AEC0;"><%= h(query[:source]) %></td>
+          </tr>
+          <%- end -%>
+        </tbody>
+      </table>
+      <%- else -%>
+      <p style="color: #718096; font-size: 0.875rem;">No SQL queries recorded.</p>
+      <%- end -%>
+    </div>
+
+    <!-- Views Pane -->
+    <div class="brainz-debug-pane" data-pane="views">
+      <%- templates = @views[:templates] || [] -%>
+      <%- if templates.any? -%>
+      <table class="brainz-view-table">
+        <thead>
+          <tr>
+            <th width="80">Time</th>
+            <th width="80">Type</th>
+            <th>Template</th>
+          </tr>
+        </thead>
+        <tbody>
+          <%- templates.each do |view| -%>
+          <tr>
+            <td style="font-family: var(--brainz-mono); font-size: 0.75rem;"><%= sprintf('%.2f', view[:duration] || 0) %>ms</td>
+            <td><%= h(view[:type]) %></td>
+            <td style="font-family: var(--brainz-mono); font-size: 0.75rem;"><%= h(view[:template]) %></td>
+          </tr>
+          <%- end -%>
+        </tbody>
+      </table>
+      <%- else -%>
+      <p style="color: #718096; font-size: 0.875rem;">No view renders recorded.</p>
+      <%- end -%>
+    </div>
+
+    <!-- Logs Pane -->
+    <div class="brainz-debug-pane" data-pane="logs">
+      <%- if @logs.any? -%>
+      <%- @logs.each do |log| -%>
+      <div class="brainz-log-entry <%= log_level_class(log[:level]) %>">
+        <span class="log-level"><%= h(log[:level].to_s.upcase) %></span>
+        <span class="log-time"><%= format_timestamp(log[:timestamp]) %></span>
+        <span class="log-message"><%= h(log[:message]) %></span>
+      </div>
+      <%- end -%>
+      <%- else -%>
+      <p style="color: #718096; font-size: 0.875rem;">No logs recorded for this request.</p>
+      <%- end -%>
+    </div>
+
+    <!-- Timeline Pane -->
+    <div class="brainz-debug-pane" data-pane="timeline">
+      <div class="brainz-timeline">
+        <%- total = (@timing[:duration_ms] || 1).to_f -%>
+        <%- db_pct = ((@database[:total_duration_ms] || 0) / total * 100).round -%>
+        <%- views_pct = ((@views[:total_duration_ms] || 0) / total * 100).round -%>
+        <%- other_pct = [100 - db_pct - views_pct, 0].max -%>
+
+        <div class="timeline-bar">
+          <%- if db_pct > 0 -%>
+          <div class="timeline-segment db" style="width: <%= db_pct %>%">
+            DB <%= format_duration(@database[:total_duration_ms]) %>
+          </div>
+          <%- end -%>
+          <%- if views_pct > 0 -%>
+          <div class="timeline-segment views" style="width: <%= views_pct %>%">
+            Views <%= format_duration(@views[:total_duration_ms]) %>
+          </div>
+          <%- end -%>
+          <%- if other_pct > 0 -%>
+          <div class="timeline-segment other" style="width: <%= other_pct %>%">
+            Other
+          </div>
+          <%- end -%>
+        </div>
+
+        <div style="margin-top: 1rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+          <div style="text-align: center; padding: 1rem; background: #F7FAFC; border-radius: 8px;">
+            <div style="font-size: 1.5rem; font-weight: 600; color: #3182CE;"><%= format_duration(@database[:total_duration_ms]) %></div>
+            <div style="font-size: 0.75rem; color: #718096; margin-top: 0.25rem;">Database (<%= @database[:total_count] || 0 %> queries)</div>
+          </div>
+          <div style="text-align: center; padding: 1rem; background: #F7FAFC; border-radius: 8px;">
+            <div style="font-size: 1.5rem; font-weight: 600; color: #38A169;"><%= format_duration(@views[:total_duration_ms]) %></div>
+            <div style="font-size: 0.75rem; color: #718096; margin-top: 0.25rem;">Views (<%= (@views[:templates] || []).length %> templates)</div>
+          </div>
+          <div style="text-align: center; padding: 1rem; background: #F7FAFC; border-radius: 8px;">
+            <div style="font-size: 1.5rem; font-weight: 600; color: #718096;"><%= format_duration(@timing[:duration_ms]) %></div>
+            <div style="font-size: 0.75rem; color: #718096; margin-top: 0.25rem;">Total Request Time</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="<%= asset_url('devtools.css') %>">
+<script src="<%= asset_url('devtools.js') %>"></script>

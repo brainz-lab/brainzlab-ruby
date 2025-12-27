@@ -20,6 +20,24 @@ module BrainzLab
 
         # Add request context middleware (runs early)
         app.middleware.insert_after ActionDispatch::RequestId, BrainzLab::Rails::Middleware
+
+        # Add DevTools middlewares if enabled
+        if BrainzLab.configuration.devtools_enabled
+          require_relative "../devtools"
+
+          # Asset server (handles /__brainzlab__/* requests)
+          app.middleware.insert_before ActionDispatch::Static, BrainzLab::DevTools::Middleware::AssetServer
+
+          # Error page (catches exceptions and renders branded error page)
+          # Insert AFTER DebugExceptions - that's what renders Rails' default error page
+          # By being after it, we catch exceptions before DebugExceptions does
+          if defined?(ActionDispatch::DebugExceptions)
+            app.middleware.insert_after ActionDispatch::DebugExceptions, BrainzLab::DevTools::Middleware::ErrorPage
+          end
+
+          # Debug panel (injects panel into HTML responses)
+          app.middleware.use BrainzLab::DevTools::Middleware::DebugPanel
+        end
       end
 
       config.after_initialize do
