@@ -8,6 +8,7 @@ require_relative "brainzlab/reflex"
 require_relative "brainzlab/pulse"
 require_relative "brainzlab/flux"
 require_relative "brainzlab/signal"
+require_relative "brainzlab/vault"
 require_relative "brainzlab/instrumentation"
 
 module BrainzLab
@@ -28,6 +29,7 @@ module BrainzLab
       Pulse.reset!
       Flux.reset!
       Signal.reset!
+      Vault.reset!
     end
 
     # Context management
@@ -119,6 +121,14 @@ module BrainzLab
         results[:services][:signal] = check_service_health(
           url: configuration.signal_url,
           name: 'Signal'
+        )
+      end
+
+      # Check Vault
+      if configuration.vault_enabled
+        results[:services][:vault] = check_service_health(
+          url: configuration.vault_url,
+          name: 'Vault'
         )
       end
 

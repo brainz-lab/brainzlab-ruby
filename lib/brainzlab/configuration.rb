@@ -50,6 +50,13 @@ module BrainzLab
                   :signal_api_key,
                   :signal_master_key,
                   :signal_auto_provision,
+                  :vault_enabled,
+                  :vault_url,
+                  :vault_api_key,
+                  :vault_master_key,
+                  :vault_auto_provision,
+                  :vault_cache_enabled,
+                  :vault_cache_ttl,
                   :scrub_fields,
                   :logger,
                   :instrument_http,
@@ -137,6 +144,15 @@ module BrainzLab
       @signal_master_key = ENV["SIGNAL_MASTER_KEY"]
       @signal_auto_provision = true
 
+      # Vault settings
+      @vault_enabled = true
+      @vault_url = ENV["VAULT_URL"] || "https://vault.brainzlab.ai"
+      @vault_api_key = ENV["VAULT_API_KEY"]
+      @vault_master_key = ENV["VAULT_MASTER_KEY"]
+      @vault_auto_provision = true
+      @vault_cache_enabled = true
+      @vault_cache_ttl = 300  # 5 minutes
+
       # Filtering
       @scrub_fields = %i[password password_confirmation token api_key secret]
 
@@ -214,6 +230,15 @@ module BrainzLab
 
     def signal_auth_key
       signal_api_key || secret_key
+    end
+
+    def vault_valid?
+      key = vault_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def vault_auth_key
+      vault_api_key || secret_key
     end
 
     def debug?
