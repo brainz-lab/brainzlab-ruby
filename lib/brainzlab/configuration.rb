@@ -57,6 +57,14 @@ module BrainzLab
                   :vault_auto_provision,
                   :vault_cache_enabled,
                   :vault_cache_ttl,
+                  :vision_enabled,
+                  :vision_url,
+                  :vision_api_key,
+                  :vision_ingest_key,
+                  :vision_master_key,
+                  :vision_auto_provision,
+                  :vision_default_model,
+                  :vision_default_browser_provider,
                   :scrub_fields,
                   :logger,
                   :instrument_http,
@@ -153,6 +161,16 @@ module BrainzLab
       @vault_cache_enabled = true
       @vault_cache_ttl = 300  # 5 minutes
 
+      # Vision settings (AI browser automation)
+      @vision_enabled = true
+      @vision_url = ENV["VISION_URL"] || "https://vision.brainzlab.ai"
+      @vision_api_key = ENV["VISION_API_KEY"]
+      @vision_ingest_key = ENV["VISION_INGEST_KEY"]
+      @vision_master_key = ENV["VISION_MASTER_KEY"]
+      @vision_auto_provision = true
+      @vision_default_model = ENV["VISION_DEFAULT_MODEL"] || "claude-sonnet-4"
+      @vision_default_browser_provider = ENV["VISION_DEFAULT_BROWSER_PROVIDER"] || "local"
+
       # Filtering
       @scrub_fields = %i[password password_confirmation token api_key secret]
 
@@ -239,6 +257,15 @@ module BrainzLab
 
     def vault_auth_key
       vault_api_key || secret_key
+    end
+
+    def vision_valid?
+      key = vision_ingest_key || vision_api_key || secret_key
+      !key.nil? && !key.empty?
+    end
+
+    def vision_auth_key
+      vision_ingest_key || vision_api_key || secret_key
     end
 
     def debug?
