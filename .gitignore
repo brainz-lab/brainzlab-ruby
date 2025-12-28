@@ -1,1 +1,24 @@
 *.gem
+pkg/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test coverage
+/coverage/
+
+# Vendor bundle
+/vendor/bundle
+
+# Local development
+.byebug_history
+.irb_history
+
+# Temporary files
+/tmp/
