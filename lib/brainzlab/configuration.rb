@@ -57,6 +57,8 @@ module BrainzLab
                   :vault_auto_provision,
                   :vault_cache_enabled,
                   :vault_cache_ttl,
+                  :vault_auto_load,
+                  :vault_load_provider_keys,
                   :vision_enabled,
                   :vision_url,
                   :vision_api_key,
@@ -224,6 +226,8 @@ module BrainzLab
       @vault_auto_provision = true
       @vault_cache_enabled = true
       @vault_cache_ttl = 300  # 5 minutes
+      @vault_auto_load = ENV.fetch("VAULT_AUTO_LOAD", "false") == "true"  # Auto-load secrets into ENV
+      @vault_load_provider_keys = true  # Also load provider keys (OpenAI, etc.)
 
       # Vision settings (AI browser automation)
       @vision_enabled = true
@@ -533,13 +537,15 @@ module BrainzLab
     end
 
     def detect_git_commit
-      `git rev-parse HEAD 2>/dev/null`.strip.presence
+      result = `git rev-parse HEAD 2>/dev/null`.strip
+      result.empty? ? nil : result
     rescue StandardError
       nil
     end
 
     def detect_git_branch
-      `git rev-parse --abbrev-ref HEAD 2>/dev/null`.strip.presence
+      result = `git rev-parse --abbrev-ref HEAD 2>/dev/null`.strip
+      result.empty? ? nil : result
     rescue StandardError
       nil
     end

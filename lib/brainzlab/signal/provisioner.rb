@@ -12,9 +12,9 @@ module BrainzLab
       end
 
       def ensure_project!
-        return if @config.signal_api_key.present?
-        return unless @config.signal_url.present?
-        return unless @config.secret_key.present?
+        return if @config.signal_api_key && !@config.signal_api_key.to_s.empty?
+        return unless @config.signal_url && !@config.signal_url.to_s.empty?
+        return unless @config.secret_key && !@config.secret_key.to_s.empty?
 
         BrainzLab.debug_log("[Signal] Auto-provisioning project...")
         provision_project

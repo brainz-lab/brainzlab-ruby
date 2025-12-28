@@ -110,6 +110,42 @@ module BrainzLab
         false
       end
 
+      # Get all provider keys for the current project
+      # Returns a hash of provider => decrypted_key
+      def get_provider_keys
+        response = request(:get, "/api/v1/provider_keys/bulk")
+
+        return {} unless response.is_a?(Net::HTTPSuccess)
+
+        data = JSON.parse(response.body, symbolize_names: true)
+        # Convert to simple hash: { openai: "sk-...", anthropic: "sk-..." }
+        keys = {}
+        (data[:keys] || []).each do |key_data|
+          keys[key_data[:provider].to_sym] = key_data[:key]
+        end
+        keys
+      rescue StandardError => e
+        log_error("get_provider_keys", e)
+        {}
+      end
+
+      # Get a specific provider key
+      def get_provider_key(provider:, model_type: "llm")
+        response = request(
+          :get,
+          "/api/v1/provider_keys/resolve",
+          params: { provider: provider, model_type: model_type }
+        )
+
+        return nil unless response.is_a?(Net::HTTPSuccess)
+
+        data = JSON.parse(response.body, symbolize_names: true)
+        data[:key]
+      rescue StandardError => e
+        log_error("get_provider_key", e)
+        nil
+      end
+
       private
 
       def request(method, path, headers: {}, body: nil, params: nil, use_service_key: false)

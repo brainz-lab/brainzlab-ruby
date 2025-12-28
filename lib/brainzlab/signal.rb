@@ -128,7 +128,7 @@ module BrainzLab
         {
           user: ctx.user,
           tags: ctx.tags,
-          extra: ctx.context
+          extra: ctx.extra
         }
       end
     end

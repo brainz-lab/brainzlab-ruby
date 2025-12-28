@@ -12,11 +12,12 @@ module BrainzLab
       end
 
       def ensure_project!
-        return if @config.flux_ingest_key.present? || @config.flux_api_key.present?
-        return unless @config.flux_url.present?
-        return unless @config.secret_key.present?
+        return if (@config.flux_ingest_key && !@config.flux_ingest_key.to_s.empty?) ||
+                  (@config.flux_api_key && !@config.flux_api_key.to_s.empty?)
+        return unless @config.flux_url && !@config.flux_url.to_s.empty?
+        return unless @config.secret_key && !@config.secret_key.to_s.empty?
 
-        BrainzLab.debug("[Flux] Auto-provisioning project...")
+        BrainzLab.debug_log("[Flux] Auto-provisioning project...")
         provision_project
       end
 
@@ -44,12 +45,12 @@ module BrainzLab
           data = JSON.parse(response.body)
           @config.flux_ingest_key = data["ingest_key"]
           @config.flux_api_key = data["api_key"]
-          BrainzLab.debug("[Flux] Project provisioned successfully")
+          BrainzLab.debug_log("[Flux] Project provisioned successfully")
         else
-          BrainzLab.debug("[Flux] Provisioning failed: #{response.code} - #{response.body}")
+          BrainzLab.debug_log("[Flux] Provisioning failed: #{response.code} - #{response.body}")
         end
       rescue => e
-        BrainzLab.debug("[Flux] Provisioning error: #{e.message}")
+        BrainzLab.debug_log("[Flux] Provisioning error: #{e.message}")
       end
     end
   end

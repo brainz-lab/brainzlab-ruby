@@ -245,7 +245,7 @@ module BrainzLab
         # - "path/to/file.rb:42:in `method_name'"  (backtick + single quote)
         # - "path/to/file.rb:42:in 'method_name'"  (single quotes)
         # - "path/to/file.rb:42"                   (no method)
-        if line =~ /\A(.+):(\d+):in [`'](.+)'?\z/
+        if line =~ /\A(.+):(\d+):in [`']([^']+)'?\z/
           {
             file: $1,
             line: $2.to_i,

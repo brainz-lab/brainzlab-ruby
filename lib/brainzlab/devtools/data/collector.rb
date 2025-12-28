@@ -216,7 +216,6 @@ module BrainzLab
 
             sql.gsub(/\b\d+\b/, "?")
                .gsub(/'[^']*'/, "?")
-               .gsub(/"[^"]*"/, "?")
                .gsub(/\$\d+/, "?")
                .gsub(%r{/\*.*?\*/}, "")
                .gsub(/\s+/, " ")

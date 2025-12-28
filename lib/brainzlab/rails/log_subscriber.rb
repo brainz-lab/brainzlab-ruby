@@ -149,8 +149,7 @@ module BrainzLab
 
         sql
           .gsub(/\b\d+\b/, "?")                    # Replace numbers
-          .gsub(/'[^']*'/, "?")                    # Replace strings
-          .gsub(/"[^"]*"/, "?")                    # Replace double-quoted strings
+          .gsub(/'[^']*'/, "?")                    # Replace single-quoted strings
           .gsub(/\$\d+/, "?")                      # Replace positional params
           .gsub(/\/\*.*?\*\//, "")                 # Remove comments
           .gsub(/\s+/, " ")                        # Normalize whitespace

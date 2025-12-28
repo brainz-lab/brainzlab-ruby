@@ -10,7 +10,10 @@ RSpec.describe BrainzLab::Signal do
       config.environment = "test"
       config.host = "test-host"
       config.signal_enabled = true
+      config.signal_api_key = "test_signal_key"  # Set to skip auto-provisioning
     end
+
+    described_class.reset!
 
     stub_request(:post, "https://signal.brainzlab.ai/api/v1/alerts")
       .to_return(status: 201, body: '{"id": "alert_123"}')
@@ -18,7 +21,7 @@ RSpec.describe BrainzLab::Signal do
     stub_request(:post, "https://signal.brainzlab.ai/api/v1/notifications")
       .to_return(status: 201, body: '{"id": "notification_123"}')
 
-    stub_request(:post, "https://signal.brainzlab.ai/api/v1/triggers")
+    stub_request(:post, "https://signal.brainzlab.ai/api/v1/rules/trigger")
       .to_return(status: 201, body: '{"triggered": true}')
   end
 
@@ -154,7 +157,7 @@ RSpec.describe BrainzLab::Signal do
     it "triggers a predefined alert rule" do
       described_class.trigger("disk_space_low", threshold: 90, current: 95)
 
-      expect(WebMock).to have_requested(:post, "https://signal.brainzlab.ai/api/v1/triggers")
+      expect(WebMock).to have_requested(:post, "https://signal.brainzlab.ai/api/v1/rules/trigger")
         .with { |req|
           body = JSON.parse(req.body)
           body["type"] == "trigger" &&
@@ -167,7 +170,7 @@ RSpec.describe BrainzLab::Signal do
     it "includes environment and service" do
       described_class.trigger("test_rule")
 
-      expect(WebMock).to have_requested(:post, "https://signal.brainzlab.ai/api/v1/triggers")
+      expect(WebMock).to have_requested(:post, "https://signal.brainzlab.ai/api/v1/rules/trigger")
         .with { |req|
           body = JSON.parse(req.body)
           body["environment"] == "test" &&
@@ -180,7 +183,7 @@ RSpec.describe BrainzLab::Signal do
 
       described_class.trigger("test_rule")
 
-      expect(WebMock).not_to have_requested(:post, "https://signal.brainzlab.ai/api/v1/triggers")
+      expect(WebMock).not_to have_requested(:post, "https://signal.brainzlab.ai/api/v1/rules/trigger")
     end
   end
 

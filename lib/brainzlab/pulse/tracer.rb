@@ -52,7 +52,7 @@ module BrainzLab
         ).compact
 
         # Add request context if available
-        ctx = Context.current
+        ctx = BrainzLab::Context.current
         payload[:request_id] ||= ctx.request_id
         payload[:user_id] ||= ctx.user&.dig(:id)&.to_s
 

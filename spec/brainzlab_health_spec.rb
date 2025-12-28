@@ -16,6 +16,15 @@ RSpec.describe BrainzLab, ".health_check" do
       config.flux_url = "https://flux.brainzlab.ai"
       config.signal_enabled = true
       config.signal_url = "https://signal.brainzlab.ai"
+      # Disable new services for this test
+      config.vault_enabled = false
+      config.vision_enabled = false
+      config.cortex_enabled = false
+      config.beacon_enabled = false
+      config.nerve_enabled = false
+      config.dendrite_enabled = false
+      config.sentinel_enabled = false
+      config.synapse_enabled = false
     end
   end
 

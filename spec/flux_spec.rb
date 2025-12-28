@@ -9,9 +9,12 @@ RSpec.describe BrainzLab::Flux do
       config.service = "test-service"
       config.environment = "test"
       config.flux_enabled = true
+      config.flux_ingest_key = "test_flux_key"  # Set to skip auto-provisioning
     end
 
-    stub_request(:post, %r{https://flux.brainzlab.ai/api/v1/(events|metrics)})
+    described_class.reset!
+
+    stub_request(:post, %r{flux\.brainzlab\.ai/api/v1/(events|metrics|flux/batch)})
       .to_return(status: 201, body: '{"ingested": 1}')
   end
 
@@ -20,7 +23,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.track("user.signup", email: "test@example.com", plan: "premium")
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/events")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           events = body["events"]
@@ -43,7 +46,7 @@ RSpec.describe BrainzLab::Flux do
       )
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/events")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           event = body["events"].first
@@ -60,7 +63,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.track("test.event")
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/events")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           event = body["events"].first
@@ -75,7 +78,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.track("test.event")
       described_class.flush!
 
-      expect(WebMock).not_to have_requested(:post, "https://flux.brainzlab.ai/api/v1/events")
+      expect(WebMock).not_to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
     end
   end
 
@@ -86,7 +89,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.track_for_user(user, "profile.updated", changes: 5)
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/events")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           event = body["events"].first
@@ -99,7 +102,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.track_for_user("user-456", "login")
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/events")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           event = body["events"].first
@@ -113,7 +116,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.gauge("cpu.usage", 75.5, tags: { host: "web-01" })
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metrics = body["metrics"]
@@ -132,7 +135,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.gauge("test.metric", 100)
       described_class.flush!
 
-      expect(WebMock).not_to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).not_to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
     end
   end
 
@@ -141,7 +144,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.increment("requests.total", 5, tags: { endpoint: "/api/users" })
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metric = body["metrics"].first
@@ -155,7 +158,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.increment("page.views")
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metric = body["metrics"].first
@@ -169,7 +172,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.decrement("connections.active", 3)
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metric = body["metrics"].first
@@ -182,7 +185,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.decrement("queue.size")
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metric = body["metrics"].first
@@ -196,7 +199,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.distribution("response.time", 125.5, tags: { route: "users#index" })
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metric = body["metrics"].first
@@ -212,7 +215,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.set("unique.users", "user-123", tags: { page: "home" })
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metric = body["metrics"].first
@@ -226,7 +229,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.set("active.sessions", 12345)
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metric = body["metrics"].first
@@ -245,7 +248,7 @@ RSpec.describe BrainzLab::Flux do
       described_class.flush!
 
       expect(result).to eq(42)
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metric = body["metrics"].first
@@ -266,7 +269,7 @@ RSpec.describe BrainzLab::Flux do
 
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/metrics")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
         .with { |req|
           body = JSON.parse(req.body)
           metric = body["metrics"].first
@@ -280,11 +283,11 @@ RSpec.describe BrainzLab::Flux do
     it "immediately flushes buffered data" do
       described_class.track("test.event")
 
-      expect(WebMock).not_to have_requested(:post, "https://flux.brainzlab.ai/api/v1/events")
+      expect(WebMock).not_to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
 
       described_class.flush!
 
-      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/events")
+      expect(WebMock).to have_requested(:post, "https://flux.brainzlab.ai/api/v1/flux/batch")
     end
   end
 

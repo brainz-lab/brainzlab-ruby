@@ -31,7 +31,7 @@ module BrainzLab
         end
 
         def valid?
-          @trace_id && @span_id
+          !trace_id.nil? && !span_id.nil?
         end
 
         def to_h

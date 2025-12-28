@@ -9,7 +9,11 @@ RSpec.describe BrainzLab::Pulse do
       config.service = "test-service"
       config.environment = "test"
       config.pulse_enabled = true
+      config.pulse_api_key = "test_pulse_key"  # Set to skip auto-provisioning
+      config.pulse_buffer_size = 1  # Disable buffering for tests
     end
+
+    described_class.reset!
 
     stub_request(:post, "https://pulse.brainzlab.ai/api/v1/traces")
       .to_return(status: 201, body: '{"id": "trace_123"}')

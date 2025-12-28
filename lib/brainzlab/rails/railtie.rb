@@ -7,6 +7,17 @@ module BrainzLab
         require "generators/brainzlab/install/install_generator"
       end
 
+      # Load Vault secrets early, before configuration
+      # This allows secrets to be used in config files
+      initializer "brainzlab.load_vault_secrets", before: :load_environment_config do
+        if BrainzLab.configuration.vault_enabled && BrainzLab.configuration.vault_auto_load
+          BrainzLab.debug_log("[Vault] Auto-loading secrets into ENV...")
+          BrainzLab::Vault.load!(
+            provider_keys: BrainzLab.configuration.vault_load_provider_keys
+          )
+        end
+      end
+
       initializer "brainzlab.configure_rails_initialization" do |app|
         # Set defaults from Rails
         BrainzLab.configure do |config|
@@ -29,10 +40,10 @@ module BrainzLab
           app.middleware.insert_before ActionDispatch::Static, BrainzLab::DevTools::Middleware::AssetServer
 
           # Error page (catches exceptions and renders branded error page)
-          # Insert AFTER DebugExceptions - that's what renders Rails' default error page
-          # By being after it, we catch exceptions before DebugExceptions does
+          # Insert BEFORE DebugExceptions so we can intercept the HTML error page
+          # that DebugExceptions renders and replace it with our own
           if defined?(ActionDispatch::DebugExceptions)
-            app.middleware.insert_after ActionDispatch::DebugExceptions, BrainzLab::DevTools::Middleware::ErrorPage
+            app.middleware.insert_before ActionDispatch::DebugExceptions, BrainzLab::DevTools::Middleware::ErrorPage
           end
 
           # Debug panel (injects panel into HTML responses)

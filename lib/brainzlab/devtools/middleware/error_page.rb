@@ -10,41 +10,136 @@ module BrainzLab
         end
 
         def call(env)
-          $stderr.puts "[BrainzLab::ErrorPage] call() for #{env['PATH_INFO']}"
-
-          unless should_handle?(env)
-            $stderr.puts "[BrainzLab::ErrorPage] should_handle? returned false, passing through"
-            return @app.call(env)
-          end
-
-          $stderr.puts "[BrainzLab::ErrorPage] should_handle? returned true, wrapping request"
+          return @app.call(env) unless should_handle?(env)
 
           begin
             status, headers, body = @app.call(env)
-            $stderr.puts "[BrainzLab::ErrorPage] Request completed normally with status #{status}"
+
+            # Check if this is an error response that we should intercept
+            if status >= 400 && html_response?(headers) && !json_request?(env)
+              # Check if this looks like Rails' default error page
+              body_content = collect_body(body)
+              if body_content.include?("Action Controller: Exception caught") || body_content.include?("background: #C00")
+                # Extract exception info from the page
+                exception_info = extract_exception_from_html(body_content)
+                if exception_info
+                  data = collect_debug_data_from_info(env, exception_info)
+                  return render_error_page_from_info(exception_info, data)
+                end
+              end
+            end
+
             [status, headers, body]
           rescue Exception => exception
-            $stderr.puts "[BrainzLab::ErrorPage] Caught exception: #{exception.class}: #{exception.message}"
-
             # Don't intercept if request wants JSON
-            if json_request?(env)
-              $stderr.puts "[BrainzLab::ErrorPage] JSON request, re-raising"
-              return raise_exception(exception)
-            end
+            return raise_exception(exception) if json_request?(env)
 
             # Still capture to Reflex if available
             capture_to_reflex(exception)
 
-            # Collect debug data
+            # Collect debug data and render branded error page
             data = collect_debug_data(env, exception)
-
-            # Render branded error page
-            $stderr.puts "[BrainzLab::ErrorPage] Rendering branded error page"
             render_error_page(exception, data)
           end
         end
 
+        def html_response?(headers)
+          # Handle both uppercase and lowercase header names
+          content_type = headers["Content-Type"] || headers["content-type"] || ""
+          content_type.to_s.downcase.include?("text/html")
+        end
+
+        def extract_exception_from_html(body)
+          # Try to extract exception class and message from Rails error page
+          if match = body.match(/<h1>([^<]+)<\/h1>/)
+            error_title = match[1]
+            # Extract the exception message from the page
+            if msg_match = body.match(/<pre[^>]*>([^<]+)<\/pre>/)
+              error_message = msg_match[1]
+            end
+
+            # Try to extract backtrace from Rails 8 format
+            # Format: <a class="trace-frames ...">path/to/file.rb:123:in 'method'</a>
+            backtrace = []
+            body.scan(/<a[^>]*class="trace-frames[^"]*"[^>]*>\s*([^<]+)\s*<\/a>/m) do |trace_match|
+              line = trace_match[0].strip
+              # Decode HTML entities
+              line = line.gsub("&#39;", "'").gsub("&quot;", '"').gsub("&amp;", "&").gsub("&lt;", "<").gsub("&gt;", ">")
+              backtrace << line unless line.empty?
+            end
+
+            {
+              class_name: decode_html_entities(error_title.strip),
+              message: decode_html_entities(error_message&.strip || error_title.strip),
+              backtrace: backtrace
+            }
+          end
+        end
+
+        def decode_html_entities(str)
+          return str unless str
+          str.gsub("&#39;", "'")
+             .gsub("&quot;", '"')
+             .gsub("&amp;", "&")
+             .gsub("&lt;", "<")
+             .gsub("&gt;", ">")
+             .gsub("&nbsp;", " ")
+        end
+
+        def collect_debug_data_from_info(env, info)
+          context = defined?(BrainzLab::Context) ? BrainzLab::Context.current : nil
+          collector_data = Data::Collector.get_request_data
+
+          backtrace = (info[:backtrace] || []).map do |line|
+            parsed = parse_backtrace_line(line)
+            parsed[:in_app] = in_app_frame?(parsed[:file])
+            parsed
+          end
+
+          {
+            exception: nil,
+            exception_class: info[:class_name],
+            exception_message: info[:message],
+            backtrace: backtrace,
+            request: build_request_info(env, context),
+            context: build_context_info(context),
+            sql_queries: collector_data.dig(:database, :queries) || [],
+            environment: collect_environment_info,
+            source_extract: nil
+          }
+        end
+
+        def render_error_page_from_info(info, data)
+          # Create a simple exception-like object
+          exception = StandardError.new(info[:message])
+          exception.define_singleton_method(:class) do
+            Class.new(StandardError) do
+              define_singleton_method(:name) { info[:class_name] }
+            end
+          end
+
+          data[:exception] = exception
+          html = @renderer.render(exception, data)
+
+          [
+            500,
+            {
+              "Content-Type" => "text/html; charset=utf-8",
+              "Content-Length" => html.bytesize.to_s,
+              "X-Content-Type-Options" => "nosniff"
+            },
+            [html]
+          ]
+        end
+
         private
+
+        def collect_body(body)
+          full_body = +""
+          body.each { |part| full_body << part }
+          body.close if body.respond_to?(:close)
+          full_body
+        end
 
         def should_handle?(env)
           return false unless DevTools.error_page_enabled?

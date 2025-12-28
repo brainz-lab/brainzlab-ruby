@@ -123,12 +123,12 @@ module BrainzLab
       # Time a block and record as distribution
       def measure(name, tags: {})
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        result = yield
-        duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000
-
-        distribution(name, duration_ms, tags: tags.merge(unit: "ms"))
-
-        result
+        begin
+          yield
+        ensure
+          duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000
+          distribution(name, duration_ms, tags: tags.merge(unit: "ms"))
+        end
       end
 
       # Flush any buffered data immediately
