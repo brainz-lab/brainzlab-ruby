@@ -9,11 +9,12 @@ module BrainzLab
       class ErrorPageRenderer
         def initialize
           @template_path = File.join(DevTools::ASSETS_PATH, "templates", "error_page.html.erb")
+          @cached_erb = nil
+          @template_mtime = nil
         end
 
         def render(exception, data)
-          template = File.read(@template_path)
-          erb = ERB.new(template, trim_mode: "-")
+          erb = cached_erb
 
           # Make data available to template
           @exception = exception
@@ -73,6 +74,19 @@ module BrainzLab
           when 60..3599 then "#{(seconds / 60).to_i}m ago"
           else "#{(seconds / 3600).to_i}h ago"
           end
+        end
+
+        # Cache compiled ERB template, reloading only if file changed
+        def cached_erb
+          current_mtime = File.mtime(@template_path) rescue nil
+
+          if @cached_erb.nil? || (current_mtime && current_mtime != @template_mtime)
+            template = File.read(@template_path)
+            @cached_erb = ERB.new(template, trim_mode: "-")
+            @template_mtime = current_mtime
+          end
+
+          @cached_erb
         end
       end
     end

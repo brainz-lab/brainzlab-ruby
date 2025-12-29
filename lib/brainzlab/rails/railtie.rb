@@ -53,7 +53,7 @@ module BrainzLab
 
       config.after_initialize do
         # Set up custom log formatter
-        setup_log_formatter if BrainzLab.configuration.log_formatter_enabled
+        BrainzLab::Rails::Railtie.setup_log_formatter if BrainzLab.configuration.log_formatter_enabled
 
         # Install instrumentation (HTTP tracking, etc.)
         BrainzLab::Instrumentation.install!

@@ -402,6 +402,52 @@
   transform: rotate(180deg);
 }
 
+/* Performance Score */
+.brainz-score {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.brainz-score-ring {
+  width: 100%;
+  height: 100%;
+}
+
+.brainz-score-bg {
+  stroke: #E5E5E5;
+}
+
+.brainz-score-progress {
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.3s ease;
+}
+
+.brainz-score-value {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+/* Score grades */
+.brainz-score.excellent .brainz-score-progress { stroke: #22C55E; }
+.brainz-score.excellent .brainz-score-value { color: #16A34A; }
+
+.brainz-score.good .brainz-score-progress { stroke: #3B82F6; }
+.brainz-score.good .brainz-score-value { color: #2563EB; }
+
+.brainz-score.warning .brainz-score-progress { stroke: #F59E0B; }
+.brainz-score.warning .brainz-score-value { color: #D97706; }
+
+.brainz-score.poor .brainz-score-progress { stroke: #EF4444; }
+.brainz-score.poor .brainz-score-value { color: #DC2626; }
+
 /* Tabs */
 .brainz-debug-tabs {
   display: flex;
@@ -505,6 +551,14 @@
   border-radius: 0 6px 6px 0;
 }
 
+.brainz-n-plus-one-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 .brainz-n-plus-one code {
   display: block;
   margin-top: 0.375rem;
@@ -520,6 +574,289 @@
   color: var(--brainz-text-light);
   font-size: 0.75rem;
   margin-left: 0.5rem;
+}
+
+/* Copy to AI Button */
+.brainz-copy-to-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-family: var(--brainz-font);
+  color: var(--brainz-orange);
+  background: white;
+  border: 1px solid var(--brainz-orange);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.brainz-copy-to-ai-btn:hover {
+  background: var(--brainz-orange);
+  color: white;
+}
+
+.brainz-copy-to-ai-btn:active {
+  transform: scale(0.95);
+}
+
+.brainz-copy-to-ai-btn svg {
+  flex-shrink: 0;
+}
+
+/* ============================================
+   ISSUES TAB - Anthropic/Claude Design
+   Clean, minimal, warm, elegant
+   ============================================ */
+
+/* Issues Tab styling */
+.brainz-debug-tab.has-issues {
+  color: #C35A3C;
+}
+
+.brainz-debug-tab .badge.error {
+  background: #C35A3C;
+  color: white;
+}
+
+/* No Issues State */
+.brainz-no-issues {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.brainz-no-issues svg {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  color: #16A34A;
+}
+
+.brainz-no-issues p {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #1A1A1A;
+  margin: 0 0 0.25rem 0;
+}
+
+.brainz-no-issues span {
+  font-size: 0.8125rem;
+  color: #6B6B6B;
+}
+
+/* Issues Container */
+.brainz-issues-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Issue Section */
+.brainz-issue-section {
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Issue Header */
+.brainz-issue-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #1A1A1A;
+  background: #FAFAFA;
+  border-bottom: 1px solid #E5E5E5;
+}
+
+.brainz-issue-header.error {
+  background: #FEF2F2;
+  color: #B91C1C;
+}
+
+.brainz-issue-header.warning {
+  background: #FFFBEB;
+  color: #B45309;
+}
+
+.brainz-issue-header svg {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.brainz-issue-header .issue-count {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.7;
+}
+
+/* Issue Item */
+.brainz-issue-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.875rem;
+  background: white;
+  border-bottom: 1px solid #F3F3F3;
+}
+
+.brainz-issue-item:last-child {
+  border-bottom: none;
+}
+
+/* Issue Content */
+.brainz-issue-content {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #374151;
+}
+
+.brainz-issue-content strong {
+  color: #1A1A1A;
+  font-weight: 600;
+}
+
+.brainz-issue-content code {
+  display: block;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  font-family: var(--brainz-mono);
+  font-size: 0.6875rem;
+  color: #6B7280;
+  background: #F9FAFB;
+  border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brainz-issue-source {
+  font-size: 0.6875rem;
+  color: #9CA3AF;
+  margin-left: 0.25rem;
+}
+
+.brainz-issue-source::before {
+  content: "·";
+  margin-right: 0.25rem;
+}
+
+.brainz-issue-name {
+  color: #6B7280;
+  font-weight: 400;
+}
+
+.brainz-issue-hint {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: #9CA3AF;
+}
+
+/* Issue Metric Badge */
+.brainz-issue-metric {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border-radius: 4px;
+  margin-right: 0.375rem;
+}
+
+.brainz-issue-metric.critical {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.brainz-issue-metric.slow {
+  background: #FEF3C7;
+  color: #B45309;
+}
+
+/* Copy to AI Button - Clean minimal style */
+.brainz-copy-to-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-family: var(--brainz-font);
+  color: var(--brainz-text-muted);
+  background: white;
+  border: 1px solid var(--brainz-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.brainz-copy-to-ai-btn:hover {
+  color: var(--brainz-text);
+  border-color: var(--brainz-text-muted);
+  background: var(--brainz-cream-100);
+}
+
+.brainz-copy-to-ai-btn:active {
+  transform: scale(0.97);
+}
+
+.brainz-copy-to-ai-btn.copied {
+  color: var(--brainz-success);
+  border-color: var(--brainz-success);
+}
+
+.brainz-copy-to-ai-btn svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+/* Toast notification */
+.brainz-toast {
+  position: fixed;
+  bottom: 60px;
+  right: 20px;
+  padding: 0.5rem 1rem;
+  background: var(--brainz-code-bg);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-family: var(--brainz-font);
+  z-index: 1000001;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.brainz-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Slow indicators */
+.brainz-query-row.slow {
+  background: rgba(214, 158, 46, 0.08);
+}
+
+.brainz-slow {
+  color: var(--brainz-warning) !important;
+  font-weight: 600;
 }
 
 /* View Table */
@@ -613,39 +950,137 @@
 }
 
 /* Timeline */
-.brainz-timeline {
-  padding: 1rem 0;
+/* ============================================
+   TIMELINE - Clean Anthropic Design
+   ============================================ */
+
+/* Header with total time */
+.timeline-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
+.timeline-total {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1A1A1A;
+  letter-spacing: -0.02em;
+}
+
+.timeline-label {
+  font-size: 0.8125rem;
+  color: #9CA3AF;
+}
+
+/* Timeline Bar */
 .timeline-bar {
   display: flex;
-  height: 32px;
-  background: var(--brainz-cream-200);
-  border-radius: 6px;
+  height: 8px;
+  background: #F3F4F6;
+  border-radius: 4px;
   overflow: hidden;
+  margin-bottom: 1.25rem;
 }
 
 .timeline-segment {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: white;
-  min-width: 60px;
-  padding: 0 0.5rem;
+  transition: opacity 0.15s ease;
+}
+
+.timeline-segment:hover {
+  opacity: 0.85;
+}
+
+.timeline-segment-label {
+  display: none;
 }
 
 .timeline-segment.db {
-  background: var(--brainz-info);
+  background: #3B82F6;
 }
 
 .timeline-segment.views {
-  background: var(--brainz-success);
+  background: #10B981;
 }
 
 .timeline-segment.other {
-  background: var(--brainz-text-muted);
+  background: #9CA3AF;
+}
+
+/* Stats Grid */
+.timeline-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.timeline-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  background: #FAFAFA;
+  border: 1px solid #F3F4F6;
+  border-radius: 8px;
+}
+
+.timeline-stat:hover {
+  background: #F5F5F5;
+}
+
+.timeline-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.timeline-stat-icon.db {
+  background: #EFF6FF;
+  color: #3B82F6;
+}
+
+.timeline-stat-icon.views {
+  background: #ECFDF5;
+  color: #10B981;
+}
+
+.timeline-stat-icon.other {
+  background: #F3F4F6;
+  color: #6B7280;
+}
+
+.timeline-stat-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-stat-value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+
+.timeline-stat-label {
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-top: 0.125rem;
+}
+
+.timeline-stat-pct {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #9CA3AF;
+  padding: 0.25rem 0.5rem;
+  background: white;
+  border-radius: 4px;
 }
 
 /* Cached Query Styling */

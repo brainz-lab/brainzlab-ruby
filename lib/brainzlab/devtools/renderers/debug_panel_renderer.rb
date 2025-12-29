@@ -10,11 +10,13 @@ module BrainzLab
       class DebugPanelRenderer
         def initialize
           @template_path = File.join(DevTools::ASSETS_PATH, "templates", "debug_panel.html.erb")
+          # Cache compiled ERB template to avoid file I/O on every request
+          @cached_erb = nil
+          @template_mtime = nil
         end
 
         def render(data)
-          template = File.read(@template_path)
-          erb = ERB.new(template, trim_mode: "-")
+          erb = cached_erb
 
           # Make data available to template
           @data = data
@@ -133,6 +135,19 @@ module BrainzLab
           else
             ""
           end
+        end
+
+        # Cache compiled ERB template, reloading only if file changed (dev mode)
+        def cached_erb
+          current_mtime = File.mtime(@template_path) rescue nil
+
+          if @cached_erb.nil? || (current_mtime && current_mtime != @template_mtime)
+            template = File.read(@template_path)
+            @cached_erb = ERB.new(template, trim_mode: "-")
+            @template_mtime = current_mtime
+          end
+
+          @cached_erb
         end
       end
     end
