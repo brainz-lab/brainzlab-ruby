@@ -96,6 +96,9 @@ module BrainzLab
             parsed
           end
 
+          # Extract source from the first in-app frame
+          source_extract = extract_source_from_backtrace(info[:backtrace] || [])
+
           {
             exception: nil,
             exception_class: info[:class_name],
@@ -105,7 +108,7 @@ module BrainzLab
             context: build_context_info(context),
             sql_queries: collector_data.dig(:database, :queries) || [],
             environment: collect_environment_info,
-            source_extract: nil
+            source_extract: source_extract
           }
         end
 
@@ -277,10 +280,48 @@ module BrainzLab
           file.include?("/app/") && !file.include?("/vendor/") && !file.include?("/gems/")
         end
 
-        def extract_source_lines(exception)
-          return nil unless exception.backtrace&.first
+        def extract_source_from_backtrace(backtrace_lines)
+          return nil if backtrace_lines.empty?
 
-          match = exception.backtrace.first.match(/\A(.+):(\d+)/)
+          # Find the first in-app frame
+          target_line = backtrace_lines.find { |line| in_app_frame?(line.split(":").first) }
+          target_line ||= backtrace_lines.first
+
+          match = target_line.match(/\A(.+):(\d+)/)
+          return nil unless match
+
+          file = match[1]
+          line_number = match[2].to_i
+          return nil unless File.exist?(file)
+
+          lines = File.readlines(file)
+          start_line = [line_number - 6, 0].max
+          end_line = [line_number + 4, lines.length - 1].min
+
+          {
+            file: file,
+            line_number: line_number,
+            lines: lines[start_line..end_line].map.with_index do |content, idx|
+              {
+                number: start_line + idx + 1,
+                content: content.chomp,
+                highlight: (start_line + idx + 1) == line_number
+              }
+            end
+          }
+        rescue StandardError
+          nil
+        end
+
+        def extract_source_lines(exception)
+          return nil unless exception.backtrace&.any?
+
+          # Find the first in-app frame (application code, not gems/framework)
+          target_line = exception.backtrace.find { |line| in_app_frame?(line.split(":").first) }
+          # Fall back to first frame if no in-app frame found
+          target_line ||= exception.backtrace.first
+
+          match = target_line.match(/\A(.+):(\d+)/)
           return nil unless match
 
           file = match[1]

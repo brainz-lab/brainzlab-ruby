@@ -2,6 +2,7 @@
 
 require_relative "devtools/data/collector"
 require_relative "devtools/middleware/asset_server"
+require_relative "devtools/middleware/database_handler"
 require_relative "devtools/middleware/error_page"
 require_relative "devtools/middleware/debug_panel"
 require_relative "devtools/renderers/error_page_renderer"

@@ -39,6 +39,10 @@ module BrainzLab
           # Asset server (handles /__brainzlab__/* requests)
           app.middleware.insert_before ActionDispatch::Static, BrainzLab::DevTools::Middleware::AssetServer
 
+          # Database handler (handles /_brainzlab/devtools/database POST requests)
+          # Allows running migrations from the error page
+          app.middleware.insert_before ActionDispatch::Static, BrainzLab::DevTools::Middleware::DatabaseHandler
+
           # Error page (catches exceptions and renders branded error page)
           # Insert BEFORE DebugExceptions so we can intercept the HTML error page
           # that DebugExceptions renders and replace it with our own

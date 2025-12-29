@@ -26,6 +26,7 @@ module BrainzLab
             event = ActiveSupport::Notifications::Event.new(*args)
             next if skip_query?(event.payload)
 
+            sql = event.payload[:sql]
             record_span(
               name: event.payload[:name] || "SQL",
               kind: "db",
@@ -33,9 +34,11 @@ module BrainzLab
               ended_at: event.end,
               duration_ms: event.duration,
               data: {
-                sql: truncate_sql(event.payload[:sql]),
+                sql: truncate_sql(sql),
                 name: event.payload[:name],
-                cached: event.payload[:cached] || false
+                cached: event.payload[:cached] || false,
+                table: extract_table(sql),
+                operation: extract_operation(sql)
               }
             )
           end
@@ -357,6 +360,36 @@ module BrainzLab
         def short_path(path)
           return nil unless path
           path.to_s.split("/").last(2).join("/")
+        end
+
+        def extract_table(sql)
+          return nil unless sql
+
+          # Match FROM "table" or FROM table patterns
+          # Also handles INSERT INTO, UPDATE, DELETE FROM
+          case sql.to_s
+          when /\bFROM\s+["'`]?(\w+)["'`]?/i
+            Regexp.last_match(1)
+          when /\bINTO\s+["'`]?(\w+)["'`]?/i
+            Regexp.last_match(1)
+          when /\bUPDATE\s+["'`]?(\w+)["'`]?/i
+            Regexp.last_match(1)
+          when /\bJOIN\s+["'`]?(\w+)["'`]?/i
+            Regexp.last_match(1)
+          end
+        end
+
+        def extract_operation(sql)
+          return nil unless sql
+
+          case sql.to_s.strip.upcase
+          when /\ASELECT/i then "SELECT"
+          when /\AINSERT/i then "INSERT"
+          when /\AUPDATE/i then "UPDATE"
+          when /\ADELETE/i then "DELETE"
+          when /\ABEGIN/i, /\ACOMMIT/i, /\AROLLBACK/i then "TRANSACTION"
+          else "QUERY"
+          end
         end
       end
     end

@@ -148,6 +148,139 @@
       border-color: var(--success);
     }
 
+    .ai-btn.fix-btn {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .ai-btn.fix-btn:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .ai-btn.running {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    .ai-btn.error {
+      background: var(--error);
+      border-color: var(--error);
+    }
+
+    /* Result Modal */
+    .result-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+
+    .result-modal.visible {
+      display: flex;
+    }
+
+    .result-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      max-width: 700px;
+      width: 90%;
+      max-height: 80vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--bg-tertiary);
+    }
+
+    .result-title {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .result-title.success { color: var(--success); }
+    .result-title.error { color: var(--error); }
+
+    .result-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.25rem;
+    }
+
+    .result-close:hover {
+      color: var(--text-primary);
+    }
+
+    .result-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .result-output {
+      background: var(--bg-primary);
+      border-radius: 8px;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8125rem;
+      white-space: pre-wrap;
+      color: var(--text-secondary);
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .result-actions {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+
+    .result-btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+    }
+
+    .result-btn:hover {
+      background: var(--bg-tertiary);
+    }
+
+    .result-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .result-btn.primary:hover {
+      background: var(--accent-hover);
+    }
+
     .ai-btn svg {
       width: 16px;
       height: 16px;
@@ -492,6 +625,38 @@
           <%- end -%>
         </div>
 
+        <!-- Quick Fix Actions (context-aware) -->
+        <%- if @exception.class.name.include?('PendingMigrationError') || @exception.class.name.include?('NoDatabaseError') || @exception.class.name.include?('ActiveRecord::ConnectionNotEstablished') -%>
+        <div class="ai-actions" style="margin-bottom: 0.5rem;">
+          <%- if @exception.class.name.include?('PendingMigrationError') -%>
+          <button class="ai-btn fix-btn" onclick="runMigrations()" id="runMigrationsBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+            <span>Run Pending Migrations</span>
+          </button>
+          <button class="ai-btn" onclick="runMigrations('status')" id="migrationStatusBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>Check Status</span>
+          </button>
+          <%- elsif @exception.class.name.include?('NoDatabaseError') -%>
+          <button class="ai-btn fix-btn" onclick="setupDatabase()" id="setupDbBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+            <span>Create Database</span>
+          </button>
+          <%- end -%>
+        </div>
+        <%- end -%>
+
         <!-- AI Copy Actions -->
         <div class="ai-actions">
           <button class="ai-btn" onclick="copyForAI()" id="copyAiBtn">
@@ -686,6 +851,34 @@
     </div>
   </div>
 
+  <!-- Result Modal for Database Operations -->
+  <div class="result-modal" id="resultModal">
+    <div class="result-content">
+      <div class="result-header">
+        <div class="result-title" id="resultTitle">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span>Operation Complete</span>
+        </div>
+        <button class="result-close" onclick="closeModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="result-body">
+        <div class="result-output" id="resultOutput"></div>
+      </div>
+      <div class="result-actions">
+        <button class="result-btn" onclick="closeModal()">Close</button>
+        <button class="result-btn primary" onclick="reloadPage()">Reload Page</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Hidden data for AI copy -->
   <script id="error-data" type="application/json">
   <%= {
@@ -765,6 +958,129 @@ Please analyze this error and suggest:
       const trace = `${data.error_class}: ${data.message}\n\n${data.backtrace.join('\n')}`;
       navigator.clipboard.writeText(trace);
     }
+
+    // Database operation functions
+    function runMigrations(action = 'migrate') {
+      const btn = document.getElementById(action === 'status' ? 'migrationStatusBtn' : 'runMigrationsBtn');
+      const originalText = btn.querySelector('span').textContent;
+
+      btn.classList.add('running');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = action === 'status' ? 'Checking...' : 'Running...';
+
+      fetch('/_brainzlab/devtools/database', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCSRFToken()
+        },
+        body: JSON.stringify({ action: action })
+      })
+      .then(response => response.json())
+      .then(data => {
+        btn.classList.remove('running');
+        btn.disabled = false;
+        btn.querySelector('span').textContent = originalText;
+
+        showResult(data.success, data.output, action === 'status' ? 'Migration Status' : 'Migration Result');
+      })
+      .catch(error => {
+        btn.classList.remove('running');
+        btn.classList.add('error');
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 'Failed';
+
+        showResult(false, error.message, 'Error');
+
+        setTimeout(() => {
+          btn.classList.remove('error');
+          btn.querySelector('span').textContent = originalText;
+        }, 3000);
+      });
+    }
+
+    function setupDatabase() {
+      const btn = document.getElementById('setupDbBtn');
+      const originalText = btn.querySelector('span').textContent;
+
+      btn.classList.add('running');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = 'Creating...';
+
+      fetch('/_brainzlab/devtools/database', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': getCSRFToken()
+        },
+        body: JSON.stringify({ action: 'create' })
+      })
+      .then(response => response.json())
+      .then(data => {
+        btn.classList.remove('running');
+        btn.disabled = false;
+        btn.querySelector('span').textContent = originalText;
+
+        showResult(data.success, data.output, 'Database Setup');
+      })
+      .catch(error => {
+        btn.classList.remove('running');
+        btn.classList.add('error');
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 'Failed';
+
+        showResult(false, error.message, 'Error');
+
+        setTimeout(() => {
+          btn.classList.remove('error');
+          btn.querySelector('span').textContent = originalText;
+        }, 3000);
+      });
+    }
+
+    function getCSRFToken() {
+      const metaTag = document.querySelector('meta[name="csrf-token"]');
+      return metaTag ? metaTag.getAttribute('content') : '';
+    }
+
+    function showResult(success, output, title) {
+      const modal = document.getElementById('resultModal');
+      const titleEl = document.getElementById('resultTitle');
+      const outputEl = document.getElementById('resultOutput');
+
+      titleEl.className = 'result-title ' + (success ? 'success' : 'error');
+      titleEl.innerHTML = success
+        ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg><span>${title}</span>`
+        : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg><span>${title}</span>`;
+
+      outputEl.textContent = output || 'No output';
+      modal.classList.add('visible');
+    }
+
+    function closeModal() {
+      document.getElementById('resultModal').classList.remove('visible');
+    }
+
+    function reloadPage() {
+      window.location.reload();
+    }
+
+    // Close modal on escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // Close modal on backdrop click
+    document.getElementById('resultModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
   </script>
 </body>
 </html>
