@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "reflex/client"
-require_relative "reflex/breadcrumbs"
-require_relative "reflex/provisioner"
+require_relative 'reflex/client'
+require_relative 'reflex/breadcrumbs'
+require_relative 'reflex/provisioner'
 
 module BrainzLab
   module Reflex
@@ -158,7 +158,7 @@ module BrainzLab
 
         payload = {
           timestamp: Time.now.utc.iso8601(3),
-          error_class: "Message",
+          error_class: 'Message',
           message: message.to_s,
           level: level.to_s,
 
@@ -247,17 +247,17 @@ module BrainzLab
         # - "path/to/file.rb:42"                   (no method)
         if line =~ /\A(.+):(\d+):in [`']([^']+)'?\z/
           {
-            file: $1,
-            line: $2.to_i,
-            function: $3,
-            in_app: in_app_frame?($1)
+            file: ::Regexp.last_match(1),
+            line: ::Regexp.last_match(2).to_i,
+            function: ::Regexp.last_match(3),
+            in_app: in_app_frame?(::Regexp.last_match(1))
           }
         elsif line =~ /\A(.+):(\d+)\z/
           {
-            file: $1,
-            line: $2.to_i,
+            file: ::Regexp.last_match(1),
+            line: ::Regexp.last_match(2).to_i,
             function: nil,
-            in_app: in_app_frame?($1)
+            in_app: in_app_frame?(::Regexp.last_match(1))
           }
         else
           # Still store file for display even if format is unexpected
@@ -267,14 +267,14 @@ module BrainzLab
 
       def in_app_frame?(path)
         return false if path.nil?
-        return false if path.include?("vendor/")
-        return false if path.include?("/gems/")
-        return false if path.include?("/ruby/")
+        return false if path.include?('vendor/')
+        return false if path.include?('/gems/')
+        return false if path.include?('/ruby/')
 
         # Match both relative and absolute paths containing app/ or lib/
-        path.start_with?("app/", "lib/", "./app/", "./lib/") ||
-          path.include?("/app/") ||
-          path.include?("/lib/")
+        path.start_with?('app/', 'lib/', './app/', './lib/') ||
+          path.include?('/app/') ||
+          path.include?('/lib/')
       end
 
       def filter_params(params)
@@ -288,11 +288,11 @@ module BrainzLab
         case obj
         when Hash
           obj.each_with_object({}) do |(key, value), result|
-            if should_filter?(key, fields)
-              result[key] = "[FILTERED]"
-            else
-              result[key] = deep_filter(value, fields)
-            end
+            result[key] = if should_filter?(key, fields)
+                            '[FILTERED]'
+                          else
+                            deep_filter(value, fields)
+                          end
           end
         when Array
           obj.map { |item| deep_filter(item, fields) }
@@ -363,12 +363,12 @@ module BrainzLab
 
       def in_app_line?(line)
         return false if line.nil?
-        return false if line.include?("vendor/")
-        return false if line.include?("/gems/")
+        return false if line.include?('vendor/')
+        return false if line.include?('/gems/')
 
-        line.start_with?("app/", "lib/", "./app/", "./lib/") ||
-          line.include?("/app/") ||
-          line.include?("/lib/")
+        line.start_with?('app/', 'lib/', './app/', './lib/') ||
+          line.include?('/app/') ||
+          line.include?('/lib/')
       end
 
       def normalize_frame_for_fingerprint(frame)
@@ -377,9 +377,9 @@ module BrainzLab
         # Extract file and method, normalize out line numbers
         # "app/models/user.rb:42:in `save'" -> "app/models/user.rb:in `save'"
         if frame =~ /\A(.+):\d+:in `(.+)'\z/
-          "#{$1}:in `#{$2}'"
+          "#{::Regexp.last_match(1)}:in `#{::Regexp.last_match(2)}'"
         elsif frame =~ /\A(.+):\d+\z/
-          $1
+          ::Regexp.last_match(1)
         else
           frame
         end

@@ -1,24 +1,25 @@
 # frozen_string_literal: true
 
+require 'English'
 module BrainzLab
   module Rails
     class Railtie < ::Rails::Railtie
       generators do
-        require "generators/brainzlab/install/install_generator"
+        require 'generators/brainzlab/install/install_generator'
       end
 
       # Load Vault secrets early, before configuration
       # This allows secrets to be used in config files
-      initializer "brainzlab.load_vault_secrets", before: :load_environment_config do
+      initializer 'brainzlab.load_vault_secrets', before: :load_environment_config do
         if BrainzLab.configuration.vault_enabled && BrainzLab.configuration.vault_auto_load
-          BrainzLab.debug_log("[Vault] Auto-loading secrets into ENV...")
+          BrainzLab.debug_log('[Vault] Auto-loading secrets into ENV...')
           BrainzLab::Vault.load!(
             provider_keys: BrainzLab.configuration.vault_load_provider_keys
           )
         end
       end
 
-      initializer "brainzlab.configure_rails_initialization" do |app|
+      initializer 'brainzlab.configure_rails_initialization' do |app|
         # Set defaults from Rails
         BrainzLab.configure do |config|
           config.environment ||= ::Rails.env.to_s
@@ -34,7 +35,7 @@ module BrainzLab
 
         # Add DevTools middlewares if enabled
         if BrainzLab.configuration.devtools_enabled
-          require_relative "../devtools"
+          require_relative '../devtools'
 
           # Asset server (handles /__brainzlab__/* requests)
           app.middleware.insert_before ActionDispatch::Static, BrainzLab::DevTools::Middleware::AssetServer
@@ -46,9 +47,7 @@ module BrainzLab
           # Error page (catches exceptions and renders branded error page)
           # Insert BEFORE DebugExceptions so we can intercept the HTML error page
           # that DebugExceptions renders and replace it with our own
-          if defined?(ActionDispatch::DebugExceptions)
-            app.middleware.insert_before ActionDispatch::DebugExceptions, BrainzLab::DevTools::Middleware::ErrorPage
-          end
+          app.middleware.insert_before ActionDispatch::DebugExceptions, BrainzLab::DevTools::Middleware::ErrorPage if defined?(ActionDispatch::DebugExceptions)
 
           # Debug panel (injects panel into HTML responses)
           app.middleware.use BrainzLab::DevTools::Middleware::DebugPanel
@@ -71,14 +70,10 @@ module BrainzLab
         end
 
         # Hook into ActiveJob
-        if defined?(ActiveJob::Base)
-          ActiveJob::Base.include(BrainzLab::Rails::ActiveJobExtension)
-        end
+        ActiveJob::Base.include(BrainzLab::Rails::ActiveJobExtension) if defined?(ActiveJob::Base)
 
         # Hook into ActionController for rescue_from fallback
-        if defined?(ActionController::Base)
-          ActionController::Base.include(BrainzLab::Rails::ControllerExtension)
-        end
+        ActionController::Base.include(BrainzLab::Rails::ControllerExtension) if defined?(ActionController::Base)
 
         # Hook into Sidekiq if available
         if defined?(Sidekiq)
@@ -91,8 +86,8 @@ module BrainzLab
       class << self
         def setup_log_formatter
           # Lazy require to ensure Rails is fully loaded
-          require_relative "log_formatter"
-          require_relative "log_subscriber"
+          require_relative 'log_formatter'
+          require_relative 'log_subscriber'
 
           config = BrainzLab.configuration
 
@@ -124,37 +119,23 @@ module BrainzLab
           null_logger.level = Logger::FATAL
 
           # Silence ActiveRecord SQL logging
-          if defined?(ActiveRecord::Base)
-            ActiveRecord::Base.logger = null_logger
-          end
+          ActiveRecord::Base.logger = null_logger if defined?(ActiveRecord::Base)
 
           # Silence ActionController logging (the "Completed" message)
-          if defined?(ActionController::Base)
-            ActionController::Base.logger = null_logger
-          end
+          ActionController::Base.logger = null_logger if defined?(ActionController::Base)
 
           # Silence ActionView logging
-          if defined?(ActionView::Base)
-            ActionView::Base.logger = null_logger
-          end
+          ActionView::Base.logger = null_logger if defined?(ActionView::Base)
 
           # Silence the class-level loggers for specific subscribers
-          if defined?(ActionController::LogSubscriber)
-            ActionController::LogSubscriber.logger = null_logger
-          end
+          ActionController::LogSubscriber.logger = null_logger if defined?(ActionController::LogSubscriber)
 
-          if defined?(ActionView::LogSubscriber)
-            ActionView::LogSubscriber.logger = null_logger
-          end
+          ActionView::LogSubscriber.logger = null_logger if defined?(ActionView::LogSubscriber)
 
-          if defined?(ActiveRecord::LogSubscriber)
-            ActiveRecord::LogSubscriber.logger = null_logger
-          end
+          ActiveRecord::LogSubscriber.logger = null_logger if defined?(ActiveRecord::LogSubscriber)
 
           # Silence ActionCable logging
-          if defined?(ActionCable::Server::Base)
-            ActionCable.server.config.logger = null_logger
-          end
+          ActionCable.server.config.logger = null_logger if defined?(ActionCable::Server::Base)
 
           if defined?(ActionCable::Connection::TaggedLoggerProxy)
             # ActionCable uses a tagged logger proxy that we need to quiet
@@ -184,7 +165,7 @@ module BrainzLab
         /^Rendering/,
         /^Rendered/,
         /^\[ActionCable\] Broadcasting/,
-        /^\s*$/  # Empty lines
+        /^\s*$/ # Empty lines
       ].freeze
 
       def call(severity, datetime, progname, msg)
@@ -215,7 +196,7 @@ module BrainzLab
 
         # Set request context
         context = BrainzLab::Context.current
-        request_id = request.request_id || env["action_dispatch.request_id"]
+        request_id = request.request_id || env['action_dispatch.request_id']
         context.request_id = request_id
 
         # Store request_id in thread local for log subscriber
@@ -224,7 +205,11 @@ module BrainzLab
         # Capture session_id - access session to ensure it's loaded
         if request.session.respond_to?(:id)
           # Force session load by accessing it
-          session_id = request.session.id rescue nil
+          session_id = begin
+            request.session.id
+          rescue StandardError
+            nil
+          end
           context.session_id = session_id.to_s if session_id.present?
         end
 
@@ -238,7 +223,7 @@ module BrainzLab
         # Add breadcrumb for request start
         BrainzLab::Reflex.add_breadcrumb(
           "#{request.request_method} #{request.path}",
-          category: "http.request",
+          category: 'http.request',
           level: :info,
           data: { url: request.url }
         )
@@ -262,7 +247,7 @@ module BrainzLab
           Thread.current[:brainzlab_pulse_breakdown] = nil
           BrainzLab::Pulse.start_trace(
             "#{request.request_method} #{request.path}",
-            kind: "request",
+            kind: 'request',
             parent_context: parent_context
           )
         end
@@ -272,7 +257,7 @@ module BrainzLab
         # Add breadcrumb for response
         BrainzLab::Reflex.add_breadcrumb(
           "Response #{status}",
-          category: "http.response",
+          category: 'http.response',
           level: status >= 400 ? :error : :info,
           data: { status: status }
         )
@@ -290,9 +275,7 @@ module BrainzLab
         raise
       ensure
         # Finish Pulse trace for successful requests
-        if should_trace && !$!
-          record_pulse_trace(request, started_at, status)
-        end
+        record_pulse_trace(request, started_at, status) if should_trace && !$ERROR_INFO
 
         Thread.current[:brainzlab_request_id] = nil
         BrainzLab::Context.clear!
@@ -306,8 +289,8 @@ module BrainzLab
         path = request.path
 
         # Check if path matches any excluded pattern
-        !excluded.any? do |pattern|
-          if pattern.include?("*")
+        excluded.none? do |pattern|
+          if pattern.include?('*')
             File.fnmatch?(pattern, path)
           else
             path.start_with?(pattern)
@@ -322,7 +305,6 @@ module BrainzLab
         # Collect spans from instrumentation
         spans = Thread.current[:brainzlab_pulse_spans] || []
         breakdown = Thread.current[:brainzlab_pulse_breakdown] || {}
-
 
         # Format spans for API
         formatted_spans = spans.map do |span|
@@ -339,7 +321,7 @@ module BrainzLab
 
         BrainzLab::Pulse.record_trace(
           "#{request.request_method} #{request.path}",
-          kind: "request",
+          kind: 'request',
           started_at: started_at,
           ended_at: ended_at,
           request_id: context.request_id,
@@ -377,11 +359,11 @@ module BrainzLab
         case obj
         when Hash
           obj.each_with_object({}) do |(k, v), h|
-            if BrainzLab::Reflex::FILTERED_PARAMS.include?(k.to_s)
-              h[k] = "[FILTERED]"
-            else
-              h[k] = deep_filter(v)
-            end
+            h[k] = if BrainzLab::Reflex::FILTERED_PARAMS.include?(k.to_s)
+                     '[FILTERED]'
+                   else
+                     deep_filter(v)
+                   end
           end
         when Array
           obj.map { |v| deep_filter(v) }
@@ -408,11 +390,11 @@ module BrainzLab
       def extract_headers(env)
         headers = {}
         env.each do |key, value|
-          next unless key.start_with?("HTTP_")
-          next if key == "HTTP_COOKIE"
-          next if key == "HTTP_AUTHORIZATION"
+          next unless key.start_with?('HTTP_')
+          next if key == 'HTTP_COOKIE'
+          next if key == 'HTTP_AUTHORIZATION'
 
-          header_name = key.sub("HTTP_", "").split("_").map(&:capitalize).join("-")
+          header_name = key.sub('HTTP_', '').split('_').map(&:capitalize).join('-')
           headers[header_name] = value
         end
         headers
@@ -424,11 +406,10 @@ module BrainzLab
       def report(error, handled:, severity:, context: {}, source: nil)
         # Capture both handled and unhandled, but mark them
         BrainzLab::Reflex.capture(error,
-          handled: handled,
-          severity: severity.to_s,
-          source: source,
-          extra: context
-        )
+                                  handled: handled,
+                                  severity: severity.to_s,
+                                  source: source,
+                                  extra: context)
       rescue StandardError => e
         BrainzLab.configuration.logger&.error("[BrainzLab] ErrorSubscriber failed: #{e.message}")
       end
@@ -454,7 +435,7 @@ module BrainzLab
         # Add breadcrumb
         BrainzLab::Reflex.add_breadcrumb(
           "#{self.class.name}##{action_name}",
-          category: "controller",
+          category: 'controller',
           level: :info
         )
 
@@ -491,7 +472,7 @@ module BrainzLab
 
         BrainzLab::Reflex.add_breadcrumb(
           "Job #{self.class.name}",
-          category: "job",
+          category: 'job',
           level: :info,
           data: { job_id: job_id, queue: queue_name }
         )
@@ -501,7 +482,7 @@ module BrainzLab
         if should_trace
           Thread.current[:brainzlab_pulse_spans] = []
           Thread.current[:brainzlab_pulse_breakdown] = nil
-          BrainzLab::Pulse.start_trace(self.class.name, kind: "job")
+          BrainzLab::Pulse.start_trace(self.class.name, kind: 'job')
         end
 
         error_occurred = nil
@@ -513,9 +494,7 @@ module BrainzLab
         end
       ensure
         # Record Pulse trace for job
-        if should_trace
-          record_pulse_job_trace(started_at, error_occurred)
-        end
+        record_pulse_job_trace(started_at, error_occurred) if should_trace
 
         BrainzLab::Context.clear!
       end
@@ -550,7 +529,7 @@ module BrainzLab
 
         BrainzLab::Pulse.record_trace(
           self.class.name,
-          kind: "job",
+          kind: 'job',
           started_at: started_at,
           ended_at: ended_at,
           job_class: self.class.name,
@@ -589,15 +568,14 @@ module BrainzLab
 
       def brainzlab_rescue_job(exception)
         BrainzLab::Reflex.capture(exception,
-          tags: { type: "background_job" },
-          extra: {
-            job_class: self.class.name,
-            job_id: job_id,
-            queue_name: queue_name,
-            executions: executions,
-            arguments: arguments.map(&:to_s).first(5)
-          }
-        )
+                                  tags: { type: 'background_job' },
+                                  extra: {
+                                    job_class: self.class.name,
+                                    job_id: job_id,
+                                    queue_name: queue_name,
+                                    executions: executions,
+                                    arguments: arguments.map(&:to_s).first(5)
+                                  })
         raise exception # Re-raise to let ActiveJob handle retries
       end
     end
@@ -606,15 +584,14 @@ module BrainzLab
     class SidekiqErrorHandler
       def call(exception, context, _config = nil)
         BrainzLab::Reflex.capture(exception,
-          tags: { type: "sidekiq" },
-          extra: {
-            job_class: context[:job]["class"],
-            job_id: context[:job]["jid"],
-            queue: context[:job]["queue"],
-            args: context[:job]["args"]&.map(&:to_s)&.first(5),
-            retry_count: context[:job]["retry_count"]
-          }
-        )
+                                  tags: { type: 'sidekiq' },
+                                  extra: {
+                                    job_class: context[:job]['class'],
+                                    job_id: context[:job]['jid'],
+                                    queue: context[:job]['queue'],
+                                    args: context[:job]['args']&.map(&:to_s)&.first(5),
+                                    retry_count: context[:job]['retry_count']
+                                  })
       rescue StandardError => e
         BrainzLab.configuration.logger&.error("[BrainzLab] Sidekiq handler failed: #{e.message}")
       end

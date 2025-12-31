@@ -39,7 +39,7 @@ module BrainzLab
 
       def detect_project_id
         # Try environment variable first
-        return ENV["BRAINZLAB_PROJECT_ID"] if ENV["BRAINZLAB_PROJECT_ID"]
+        return ENV['BRAINZLAB_PROJECT_ID'] if ENV['BRAINZLAB_PROJECT_ID']
 
         # Could also detect from Platform API if we have a secret key
         nil

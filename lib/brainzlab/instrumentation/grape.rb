@@ -14,7 +14,7 @@ module BrainzLab
           install_notifications!
 
           @installed = true
-          BrainzLab.debug_log("Grape instrumentation installed")
+          BrainzLab.debug_log('Grape instrumentation installed')
         end
 
         def installed?
@@ -29,23 +29,23 @@ module BrainzLab
 
         def install_notifications!
           # Grape emits these notifications
-          ActiveSupport::Notifications.subscribe("endpoint_run.grape") do |*args|
+          ActiveSupport::Notifications.subscribe('endpoint_run.grape') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             record_endpoint(event)
           end
 
-          ActiveSupport::Notifications.subscribe("endpoint_render.grape") do |*args|
+          ActiveSupport::Notifications.subscribe('endpoint_render.grape') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             record_render(event)
           end
 
-          ActiveSupport::Notifications.subscribe("endpoint_run_filters.grape") do |*args|
+          ActiveSupport::Notifications.subscribe('endpoint_run_filters.grape') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             record_filters(event)
           end
 
           # Format validation
-          ActiveSupport::Notifications.subscribe("format_response.grape") do |*args|
+          ActiveSupport::Notifications.subscribe('format_response.grape') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             record_format(event)
           end
@@ -58,19 +58,19 @@ module BrainzLab
           endpoint = payload[:endpoint]
           env = payload[:env] || {}
 
-          method = env["REQUEST_METHOD"] || "GET"
-          path = endpoint&.options&.dig(:path)&.first || env["PATH_INFO"] || "/"
+          method = env['REQUEST_METHOD'] || 'GET'
+          path = endpoint&.options&.dig(:path)&.first || env['PATH_INFO'] || '/'
           route_pattern = extract_route_pattern(endpoint)
           duration_ms = event.duration.round(2)
 
-          status = env["api.endpoint"]&.status || 200
+          status = env['api.endpoint']&.status || 200
           level = status >= 400 ? :error : :info
 
           # Add breadcrumb for Reflex
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "Grape #{method} #{route_pattern}",
-              category: "grape.endpoint",
+              category: 'grape.endpoint',
               level: level,
               data: {
                 method: method,
@@ -85,7 +85,7 @@ module BrainzLab
           # Record span for Pulse
           record_span(
             name: "Grape #{method} #{route_pattern}",
-            kind: "grape",
+            kind: 'grape',
             started_at: event.time,
             ended_at: event.end,
             duration_ms: duration_ms,
@@ -117,12 +117,12 @@ module BrainzLab
           duration_ms = event.duration.round(2)
 
           record_span(
-            name: "Grape render",
-            kind: "grape.render",
+            name: 'Grape render',
+            kind: 'grape.render',
             started_at: event.time,
             ended_at: event.end,
             duration_ms: duration_ms,
-            data: { phase: "render" }
+            data: { phase: 'render' }
           )
         rescue StandardError => e
           BrainzLab.debug_log("Grape render recording failed: #{e.message}")
@@ -131,11 +131,11 @@ module BrainzLab
         def record_filters(event)
           payload = event.payload
           duration_ms = event.duration.round(2)
-          filter_type = payload[:type] || "filter"
+          filter_type = payload[:type] || 'filter'
 
           record_span(
             name: "Grape #{filter_type} filters",
-            kind: "grape.filter",
+            kind: 'grape.filter',
             started_at: event.time,
             ended_at: event.end,
             duration_ms: duration_ms,
@@ -149,12 +149,12 @@ module BrainzLab
           duration_ms = event.duration.round(2)
 
           record_span(
-            name: "Grape format response",
-            kind: "grape.format",
+            name: 'Grape format response',
+            kind: 'grape.format',
             started_at: event.time,
             ended_at: event.end,
             duration_ms: duration_ms,
-            data: { phase: "format" }
+            data: { phase: 'format' }
           )
         rescue StandardError => e
           BrainzLab.debug_log("Grape format recording failed: #{e.message}")
@@ -177,14 +177,14 @@ module BrainzLab
         end
 
         def extract_route_pattern(endpoint)
-          return "/" unless endpoint
+          return '/' unless endpoint
 
           route = endpoint.route
-          return "/" unless route
+          return '/' unless route
 
-          route.pattern&.path || route.path || "/"
+          route.pattern&.path || route.path || '/'
         rescue StandardError
-          "/"
+          '/'
         end
       end
 
@@ -243,14 +243,14 @@ module BrainzLab
           path = request.path
 
           # Get route pattern from Grape if available
-          route_pattern = env["grape.routing_args"]&.dig(:route_info)&.pattern&.path || path
+          route_pattern = env['grape.routing_args']&.dig(:route_info)&.pattern&.path || path
 
           spans = Thread.current[:brainzlab_pulse_spans] || []
 
           payload = {
             trace_id: SecureRandom.uuid,
             name: "#{method} #{route_pattern}",
-            kind: "request",
+            kind: 'request',
             started_at: started_at.utc.iso8601(3),
             ended_at: ended_at.utc.iso8601(3),
             duration_ms: duration_ms,

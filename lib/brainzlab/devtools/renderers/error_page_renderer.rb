@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "erb"
-require "cgi"
+require 'erb'
+require 'cgi'
 
 module BrainzLab
   module DevTools
     module Renderers
       class ErrorPageRenderer
         def initialize
-          @template_path = File.join(DevTools::ASSETS_PATH, "templates", "error_page.html.erb")
+          @template_path = File.join(DevTools::ASSETS_PATH, 'templates', 'error_page.html.erb')
           @cached_erb = nil
           @template_mtime = nil
         end
@@ -40,10 +40,10 @@ module BrainzLab
         end
 
         def format_params(params, indent = 0)
-          return "" if params.nil? || params.empty?
+          return '' if params.nil? || params.empty?
 
           lines = []
-          prefix = "  " * indent
+          prefix = '  ' * indent
 
           params.each do |key, value|
             if value.is_a?(Hash)
@@ -60,13 +60,13 @@ module BrainzLab
         end
 
         def truncate(text, length = 100)
-          return "" unless text
+          return '' unless text
 
           text.length > length ? "#{text[0...length]}..." : text
         end
 
         def time_ago(time)
-          return "unknown" unless time
+          return 'unknown' unless time
 
           seconds = Time.now.utc - time
           case seconds
@@ -78,11 +78,15 @@ module BrainzLab
 
         # Cache compiled ERB template, reloading only if file changed
         def cached_erb
-          current_mtime = File.mtime(@template_path) rescue nil
+          current_mtime = begin
+            File.mtime(@template_path)
+          rescue StandardError
+            nil
+          end
 
           if @cached_erb.nil? || (current_mtime && current_mtime != @template_mtime)
             template = File.read(@template_path)
-            @cached_erb = ERB.new(template, trim_mode: "-")
+            @cached_erb = ERB.new(template, trim_mode: '-')
             @template_mtime = current_mtime
           end
 

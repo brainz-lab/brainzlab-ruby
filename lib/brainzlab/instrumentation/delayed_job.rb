@@ -11,17 +11,13 @@ module BrainzLab
           return if @installed
 
           # Install lifecycle hooks
-          if defined?(::Delayed::Worker)
-            install_lifecycle_hooks!
-          end
+          install_lifecycle_hooks! if defined?(::Delayed::Worker)
 
           # Install plugin if Delayed::Plugin is available
-          if defined?(::Delayed::Plugin)
-            ::Delayed::Worker.plugins << Plugin
-          end
+          ::Delayed::Worker.plugins << Plugin if defined?(::Delayed::Plugin)
 
           @installed = true
-          BrainzLab.debug_log("Delayed::Job instrumentation installed")
+          BrainzLab.debug_log('Delayed::Job instrumentation installed')
         end
 
         def installed?
@@ -35,15 +31,15 @@ module BrainzLab
         private
 
         def install_lifecycle_hooks!
-          ::Delayed::Worker.lifecycle.around(:invoke_job) do |job, *args, &block|
+          ::Delayed::Worker.lifecycle.around(:invoke_job) do |job, *_args, &block|
             around_invoke(job, &block)
           end
 
-          ::Delayed::Worker.lifecycle.after(:error) do |worker, job|
+          ::Delayed::Worker.lifecycle.after(:error) do |_worker, job|
             record_error(job)
           end
 
-          ::Delayed::Worker.lifecycle.after(:failure) do |worker, job|
+          ::Delayed::Worker.lifecycle.after(:failure) do |_worker, job|
             record_failure(job)
           end
         rescue StandardError => e
@@ -53,7 +49,7 @@ module BrainzLab
         def around_invoke(job, &block)
           started_at = Time.now.utc
           job_name = extract_job_name(job)
-          queue = job.queue || "default"
+          queue = job.queue || 'default'
 
           # Calculate queue wait time
           queue_wait_ms = job.created_at ? ((started_at - job.created_at) * 1000).round(2) : nil
@@ -64,7 +60,7 @@ module BrainzLab
           # Add breadcrumb
           BrainzLab::Reflex.add_breadcrumb(
             "DelayedJob #{job_name}",
-            category: "job.delayed_job",
+            category: 'job.delayed_job',
             level: :info,
             data: { job_id: job.id, queue: queue, attempts: job.attempts }
           )
@@ -133,7 +129,7 @@ module BrainzLab
           payload = {
             trace_id: SecureRandom.uuid,
             name: job_name,
-            kind: "job",
+            kind: 'job',
             started_at: started_at.utc.iso8601(3),
             ended_at: ended_at.utc.iso8601(3),
             duration_ms: duration_ms,
@@ -162,7 +158,7 @@ module BrainzLab
 
           BrainzLab::Reflex.add_breadcrumb(
             "DelayedJob error: #{extract_job_name(job)}",
-            category: "job.delayed_job.error",
+            category: 'job.delayed_job.error',
             level: :error,
             data: {
               job_id: job.id,
@@ -177,7 +173,7 @@ module BrainzLab
         def record_failure(job)
           BrainzLab::Reflex.add_breadcrumb(
             "DelayedJob failed permanently: #{extract_job_name(job)}",
-            category: "job.delayed_job.failure",
+            category: 'job.delayed_job.failure',
             level: :error,
             data: {
               job_id: job.id,
@@ -200,7 +196,7 @@ module BrainzLab
             payload.class.name
           end
         rescue StandardError
-          job.name || "Unknown"
+          job.name || 'Unknown'
         end
 
         def format_timestamp(ts)
@@ -216,21 +212,23 @@ module BrainzLab
       end
 
       # Delayed::Job Plugin (alternative installation method)
-      class Plugin < ::Delayed::Plugin
-        callbacks do |lifecycle|
-          lifecycle.around(:invoke_job) do |job, *args, &block|
-            DelayedJobInstrumentation.send(:around_invoke, job, &block)
-          end
+      if defined?(::Delayed::Plugin)
+        class Plugin < ::Delayed::Plugin
+          callbacks do |lifecycle|
+            lifecycle.around(:invoke_job) do |job, *_args, &block|
+              DelayedJobInstrumentation.send(:around_invoke, job, &block)
+            end
 
-          lifecycle.after(:error) do |worker, job|
-            DelayedJobInstrumentation.send(:record_error, job)
-          end
+            lifecycle.after(:error) do |_worker, job|
+              DelayedJobInstrumentation.send(:record_error, job)
+            end
 
-          lifecycle.after(:failure) do |worker, job|
-            DelayedJobInstrumentation.send(:record_failure, job)
+            lifecycle.after(:failure) do |_worker, job|
+              DelayedJobInstrumentation.send(:record_failure, job)
+            end
           end
         end
-      end if defined?(::Delayed::Plugin)
+      end
     end
   end
 end

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "synapse/client"
-require_relative "synapse/provisioner"
+require_relative 'synapse/client'
+require_relative 'synapse/provisioner'
 
 module BrainzLab
   module Synapse
@@ -49,13 +49,13 @@ module BrainzLab
       #     ]
       #   )
       #
-      def create_project(name:, repos: [], description: nil, **options)
+      def create_project(name:, repos: [], description: nil, **)
         return nil unless enabled?
 
         ensure_provisioned!
         return nil unless BrainzLab.configuration.synapse_valid?
 
-        client.create_project(name: name, repos: repos, description: description, **options)
+        client.create_project(name: name, repos: repos, description: description, **)
       end
 
       # Start project containers
@@ -139,7 +139,7 @@ module BrainzLab
       #     priority: :high
       #   )
       #
-      def task(project_id:, description:, type: nil, priority: nil, **options)
+      def task(project_id:, description:, type: nil, priority: nil, **)
         return nil unless enabled?
 
         ensure_provisioned!
@@ -150,7 +150,7 @@ module BrainzLab
           description: description,
           type: type,
           priority: priority,
-          **options
+          **
         )
       end
 

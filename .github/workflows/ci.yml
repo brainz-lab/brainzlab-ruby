@@ -42,5 +42,8 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
+      - name: Run RuboCop
+        run: bin/rubocop -f github
+
       - name: Check gem build
         run: gem build brainzlab.gemspec

@@ -32,7 +32,7 @@ module BrainzLab
           return unless installed_any
 
           @installed = true
-          BrainzLab.debug_log("Elasticsearch instrumentation installed")
+          BrainzLab.debug_log('Elasticsearch instrumentation installed')
         end
 
         def installed?
@@ -64,14 +64,12 @@ module BrainzLab
           return super unless should_track?
 
           started_at = Time.now.utc
-          error_info = nil
 
           begin
             response = super
             record_request(method, path, params, started_at, response.status)
             response
           rescue StandardError => e
-            error_info = e
             record_request(method, path, params, started_at, nil, e)
             raise
           end
@@ -83,7 +81,7 @@ module BrainzLab
           BrainzLab.configuration.instrument_elasticsearch
         end
 
-        def record_request(method, path, params, started_at, status, error = nil)
+        def record_request(method, path, _params, started_at, status, error = nil)
           duration_ms = ((Time.now.utc - started_at) * 1000).round(2)
           operation = extract_operation(method, path)
           index = extract_index(path)
@@ -93,7 +91,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "ES #{operation}",
-              category: "elasticsearch",
+              category: 'elasticsearch',
               level: level,
               data: {
                 method: method.to_s.upcase,
@@ -143,7 +141,7 @@ module BrainzLab
           span = {
             span_id: SecureRandom.uuid,
             name: "ES #{operation}",
-            kind: "elasticsearch",
+            kind: 'elasticsearch',
             started_at: started_at,
             ended_at: Time.now.utc,
             duration_ms: duration_ms,
@@ -168,25 +166,25 @@ module BrainzLab
           method_str = method.to_s.upcase
 
           case path
-          when %r{/_search} then "search"
-          when %r{/_bulk} then "bulk"
-          when %r{/_count} then "count"
-          when %r{/_mget} then "mget"
-          when %r{/_msearch} then "msearch"
-          when %r{/_update_by_query} then "update_by_query"
-          when %r{/_delete_by_query} then "delete_by_query"
-          when %r{/_refresh} then "refresh"
-          when %r{/_mapping} then "mapping"
-          when %r{/_settings} then "settings"
-          when %r{/_alias} then "alias"
-          when %r{/_analyze} then "analyze"
+          when %r{/_search} then 'search'
+          when %r{/_bulk} then 'bulk'
+          when %r{/_count} then 'count'
+          when %r{/_mget} then 'mget'
+          when %r{/_msearch} then 'msearch'
+          when %r{/_update_by_query} then 'update_by_query'
+          when %r{/_delete_by_query} then 'delete_by_query'
+          when %r{/_refresh} then 'refresh'
+          when %r{/_mapping} then 'mapping'
+          when %r{/_settings} then 'settings'
+          when %r{/_alias} then 'alias'
+          when %r{/_analyze} then 'analyze'
           else
             case method_str
-            when "GET" then "get"
-            when "POST" then "index"
-            when "PUT" then "update"
-            when "DELETE" then "delete"
-            when "HEAD" then "exists"
+            when 'GET' then 'get'
+            when 'POST' then 'index'
+            when 'PUT' then 'update'
+            when 'DELETE' then 'delete'
+            when 'HEAD' then 'exists'
             else method_str.downcase
             end
           end
@@ -195,13 +193,14 @@ module BrainzLab
         def extract_index(path)
           # Extract index name from path like /my-index/_search
           match = path.match(%r{^/([^/_]+)})
-          match[1] if match && !match[1].start_with?("_")
+          match[1] if match && !match[1].start_with?('_')
         rescue StandardError
           nil
         end
 
         def truncate_path(path)
           return nil unless path
+
           path.to_s[0, 200]
         end
       end

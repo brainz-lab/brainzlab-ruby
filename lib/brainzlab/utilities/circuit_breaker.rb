@@ -31,7 +31,8 @@ module BrainzLab
 
       attr_reader :name, :state, :failure_count, :success_count, :last_failure_at
 
-      def initialize(name:, failure_threshold: 5, success_threshold: 2, recovery_timeout: 30, timeout: nil, exclude_exceptions: [])
+      def initialize(name:, failure_threshold: 5, success_threshold: 2, recovery_timeout: 30, timeout: nil,
+                     exclude_exceptions: [])
         @name = name
         @failure_threshold = failure_threshold
         @success_threshold = success_threshold
@@ -47,19 +48,18 @@ module BrainzLab
       end
 
       # Execute a block with circuit breaker protection
-      def call(fallback: nil)
+      def call(fallback: nil, &)
         check_state_transition!
 
         case @state
         when :open
           track_rejected
-          if fallback
-            fallback.respond_to?(:call) ? fallback.call : fallback
-          else
-            raise CircuitOpenError, "Circuit '#{@name}' is open"
-          end
+          raise CircuitOpenError, "Circuit '#{@name}' is open" unless fallback
+
+          fallback.respond_to?(:call) ? fallback.call : fallback
+
         when :closed, :half_open
-          execute_with_protection(fallback) { yield }
+          execute_with_protection(fallback, &)
         end
       end
 
@@ -112,13 +112,13 @@ module BrainzLab
           registry[name.to_s]
         end
 
-        def register(name, **options)
-          registry[name.to_s] = new(name: name, **options)
+        def register(name, **)
+          registry[name.to_s] = new(name: name, **)
         end
 
-        def call(name, **options, &block)
+        def call(name, **options, &)
           breaker = get(name) || register(name, **options)
-          breaker.call(**options.slice(:fallback), &block)
+          breaker.call(**options.slice(:fallback), &)
         end
 
         def reset_all!
@@ -132,35 +132,31 @@ module BrainzLab
 
       private
 
-      def execute_with_protection(fallback)
+      def execute_with_protection(fallback, &)
         result = if @timeout
-                   Timeout.timeout(@timeout) { yield }
+                   Timeout.timeout(@timeout, &)
                  else
                    yield
                  end
 
         record_success
         result
-      rescue *excluded_exceptions => e
+      rescue *excluded_exceptions
         # Don't count excluded exceptions as failures
         raise
       rescue StandardError => e
         record_failure(e)
 
-        if fallback
-          fallback.respond_to?(:call) ? fallback.call : fallback
-        else
-          raise
-        end
+        raise unless fallback
+
+        fallback.respond_to?(:call) ? fallback.call : fallback
       end
 
       def record_success
         @mutex.synchronize do
           if @state == :half_open
             @success_count += 1
-            if @success_count >= @success_threshold
-              transition_to(:closed)
-            end
+            transition_to(:closed) if @success_count >= @success_threshold
           else
             @failure_count = 0
           end
@@ -187,10 +183,10 @@ module BrainzLab
       def check_state_transition!
         return unless @state == :open && @last_failure_at
 
-        if Time.now - @last_failure_at >= @recovery_timeout
-          @mutex.synchronize do
-            transition_to(:half_open) if @state == :open
-          end
+        return unless Time.now - @last_failure_at >= @recovery_timeout
+
+        @mutex.synchronize do
+          transition_to(:half_open) if @state == :open
         end
       end
 
@@ -220,39 +216,39 @@ module BrainzLab
       def track_success
         return unless BrainzLab.configuration.flux_effectively_enabled?
 
-        BrainzLab::Flux.increment("circuit_breaker.success", tags: { name: @name, state: @state.to_s })
+        BrainzLab::Flux.increment('circuit_breaker.success', tags: { name: @name, state: @state.to_s })
       end
 
       def track_failure(error)
         return unless BrainzLab.configuration.flux_effectively_enabled?
 
-        BrainzLab::Flux.increment("circuit_breaker.failure", tags: {
-          name: @name,
-          state: @state.to_s,
-          error_class: error.class.name
-        })
+        BrainzLab::Flux.increment('circuit_breaker.failure', tags: {
+                                    name: @name,
+                                    state: @state.to_s,
+                                    error_class: error.class.name
+                                  })
       end
 
       def track_rejected
         return unless BrainzLab.configuration.flux_effectively_enabled?
 
-        BrainzLab::Flux.increment("circuit_breaker.rejected", tags: { name: @name })
+        BrainzLab::Flux.increment('circuit_breaker.rejected', tags: { name: @name })
       end
 
       def track_state_change(new_state, old_state = nil)
         return unless BrainzLab.configuration.flux_effectively_enabled?
 
-        BrainzLab::Flux.track("circuit_breaker.state_change", {
-          name: @name,
-          new_state: new_state.to_s,
-          old_state: old_state&.to_s,
-          failure_count: @failure_count
-        })
+        BrainzLab::Flux.track('circuit_breaker.state_change', {
+                                name: @name,
+                                new_state: new_state.to_s,
+                                old_state: old_state&.to_s,
+                                failure_count: @failure_count
+                              })
 
         # Also add breadcrumb for debugging
         BrainzLab::Reflex.add_breadcrumb(
           "Circuit '#{@name}' transitioned to #{new_state}",
-          category: "circuit_breaker",
+          category: 'circuit_breaker',
           level: new_state == :open ? :warning : :info,
           data: { name: @name, old_state: old_state, new_state: new_state }
         )

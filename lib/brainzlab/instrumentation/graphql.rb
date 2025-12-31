@@ -13,14 +13,14 @@ module BrainzLab
           # For GraphQL Ruby 2.0+
           if ::GraphQL::Schema.respond_to?(:trace_with)
             # Will be installed per-schema via BrainzLab::GraphQL::Tracer
-            BrainzLab.debug_log("GraphQL tracer available - add `trace_with BrainzLab::Instrumentation::GraphQLInstrumentation::Tracer` to your schema")
+            BrainzLab.debug_log('GraphQL tracer available - add `trace_with BrainzLab::Instrumentation::GraphQLInstrumentation::Tracer` to your schema')
           end
 
           # Subscribe to ActiveSupport notifications if available
           install_notifications!
 
           @installed = true
-          BrainzLab.debug_log("GraphQL instrumentation installed")
+          BrainzLab.debug_log('GraphQL instrumentation installed')
         end
 
         def installed?
@@ -35,17 +35,17 @@ module BrainzLab
 
         def install_notifications!
           # GraphQL-ruby emits ActiveSupport notifications
-          ActiveSupport::Notifications.subscribe("execute.graphql") do |*args|
+          ActiveSupport::Notifications.subscribe('execute.graphql') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             record_execution(event)
           end
 
-          ActiveSupport::Notifications.subscribe("analyze.graphql") do |*args|
+          ActiveSupport::Notifications.subscribe('analyze.graphql') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             record_analyze(event)
           end
 
-          ActiveSupport::Notifications.subscribe("validate.graphql") do |*args|
+          ActiveSupport::Notifications.subscribe('validate.graphql') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             record_validate(event)
           end
@@ -56,15 +56,15 @@ module BrainzLab
         def record_execution(event)
           payload = event.payload
           query = payload[:query]
-          operation_name = query&.operation_name || "anonymous"
-          operation_type = query&.selected_operation&.operation_type || "query"
+          operation_name = query&.operation_name || 'anonymous'
+          operation_type = query&.selected_operation&.operation_type || 'query'
           duration_ms = event.duration.round(2)
 
           # Add breadcrumb
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "GraphQL #{operation_type} #{operation_name}",
-              category: "graphql.execute",
+              category: 'graphql.execute',
               level: payload[:errors]&.any? ? :error : :info,
               data: {
                 operation_name: operation_name,
@@ -78,7 +78,7 @@ module BrainzLab
           # Record span
           record_span(
             name: "GraphQL #{operation_type} #{operation_name}",
-            kind: "graphql",
+            kind: 'graphql',
             duration_ms: duration_ms,
             started_at: event.time,
             ended_at: event.end,
@@ -97,12 +97,12 @@ module BrainzLab
 
         def record_analyze(event)
           record_span(
-            name: "GraphQL analyze",
-            kind: "graphql",
+            name: 'GraphQL analyze',
+            kind: 'graphql',
             duration_ms: event.duration.round(2),
             started_at: event.time,
             ended_at: event.end,
-            data: { phase: "analyze" }
+            data: { phase: 'analyze' }
           )
         rescue StandardError => e
           BrainzLab.debug_log("GraphQL analyze recording failed: #{e.message}")
@@ -110,12 +110,12 @@ module BrainzLab
 
         def record_validate(event)
           record_span(
-            name: "GraphQL validate",
-            kind: "graphql",
+            name: 'GraphQL validate',
+            kind: 'graphql',
             duration_ms: event.duration.round(2),
             started_at: event.time,
             ended_at: event.end,
-            data: { phase: "validate" }
+            data: { phase: 'validate' }
           )
         rescue StandardError => e
           BrainzLab.debug_log("GraphQL validate recording failed: #{e.message}")
@@ -139,6 +139,7 @@ module BrainzLab
 
         def truncate_query(query)
           return nil unless query
+
           query.to_s[0, 2000]
         end
 
@@ -148,7 +149,7 @@ module BrainzLab
           scrub_fields = BrainzLab.configuration.scrub_fields
           variables.transform_values do |value|
             if scrub_fields.any? { |f| value.to_s.downcase.include?(f.to_s) }
-              "[FILTERED]"
+              '[FILTERED]'
             else
               value
             end
@@ -163,19 +164,19 @@ module BrainzLab
       module Tracer
         def execute_query(query:)
           started_at = Time.now.utc
-          operation_name = query.operation_name || "anonymous"
-          operation_type = query.selected_operation&.operation_type || "query"
+          operation_name = query.operation_name || 'anonymous'
+          operation_type = query.selected_operation&.operation_type || 'query'
 
           result = super
 
           duration_ms = ((Time.now.utc - started_at) * 1000).round(2)
-          has_errors = result.to_h["errors"]&.any?
+          has_errors = result.to_h['errors']&.any?
 
           # Add breadcrumb
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "GraphQL #{operation_type} #{operation_name}",
-              category: "graphql.execute",
+              category: 'graphql.execute',
               level: has_errors ? :error : :info,
               data: {
                 operation_name: operation_name,
@@ -191,7 +192,7 @@ module BrainzLab
             spans << {
               span_id: SecureRandom.uuid,
               name: "GraphQL #{operation_type} #{operation_name}",
-              kind: "graphql",
+              kind: 'graphql',
               started_at: started_at,
               ended_at: Time.now.utc,
               duration_ms: duration_ms,
@@ -209,7 +210,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "GraphQL #{operation_type} #{operation_name} failed",
-              category: "graphql.error",
+              category: 'graphql.error',
               level: :error,
               data: { error: e.class.name }
             )
@@ -231,7 +232,7 @@ module BrainzLab
               spans << {
                 span_id: SecureRandom.uuid,
                 name: "GraphQL field #{field.owner.graphql_name}.#{field.graphql_name}",
-                kind: "graphql.field",
+                kind: 'graphql.field',
                 started_at: started_at,
                 ended_at: Time.now.utc,
                 duration_ms: duration_ms,

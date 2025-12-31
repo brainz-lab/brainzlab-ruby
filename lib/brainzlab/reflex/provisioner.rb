@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "uri"
-require "json"
-require "fileutils"
+require 'net/http'
+require 'uri'
+require 'json'
+require 'fileutils'
 
 module BrainzLab
   module Reflex
     class Provisioner
-      CACHE_DIR = ENV.fetch("BRAINZLAB_CACHE_DIR") { File.join(Dir.home, ".brainzlab") }
+      CACHE_DIR = ENV.fetch('BRAINZLAB_CACHE_DIR') { File.join(Dir.home, '.brainzlab') }
 
       def initialize(config)
         @config = config
@@ -38,10 +38,10 @@ module BrainzLab
 
       def should_provision?
         return false unless @config.reflex_auto_provision
-        return false unless @config.app_name.to_s.strip.length > 0
+        return false unless @config.app_name.to_s.strip.length.positive?
         # Only skip if reflex_api_key is already set (not secret_key, which may be for Recall)
-        return false if @config.reflex_api_key.to_s.strip.length > 0
-        return false unless @config.reflex_master_key.to_s.strip.length > 0
+        return false if @config.reflex_api_key.to_s.strip.length.positive?
+        return false unless @config.reflex_master_key.to_s.strip.length.positive?
 
         true
       end
@@ -49,9 +49,9 @@ module BrainzLab
       def provision_project
         uri = URI.parse("#{@config.reflex_url}/api/v1/projects/provision")
         request = Net::HTTP::Post.new(uri)
-        request["Content-Type"] = "application/json"
-        request["X-Master-Key"] = @config.reflex_master_key
-        request["User-Agent"] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
+        request['Content-Type'] = 'application/json'
+        request['X-Master-Key'] = @config.reflex_master_key
+        request['User-Agent'] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
         request.body = JSON.generate({ name: @config.app_name })
 
         response = execute(uri, request)
@@ -100,7 +100,7 @@ module BrainzLab
 
       def execute(uri, request)
         http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == "https"
+        http.use_ssl = uri.scheme == 'https'
         http.open_timeout = 5
         http.read_timeout = 10
         http.request(request)

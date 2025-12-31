@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "flux/client"
-require_relative "flux/buffer"
-require_relative "flux/provisioner"
+require_relative 'flux/client'
+require_relative 'flux/buffer'
+require_relative 'flux/provisioner'
 
 module BrainzLab
   module Flux
@@ -49,7 +49,7 @@ module BrainzLab
         return unless BrainzLab.configuration.flux_valid?
 
         metric = {
-          type: "gauge",
+          type: 'gauge',
           name: name,
           value: value,
           tags: tags,
@@ -67,7 +67,7 @@ module BrainzLab
         return unless BrainzLab.configuration.flux_valid?
 
         metric = {
-          type: "counter",
+          type: 'counter',
           name: name,
           value: value,
           tags: tags,
@@ -90,7 +90,7 @@ module BrainzLab
         return unless BrainzLab.configuration.flux_valid?
 
         metric = {
-          type: "distribution",
+          type: 'distribution',
           name: name,
           value: value,
           tags: tags,
@@ -108,7 +108,7 @@ module BrainzLab
         return unless BrainzLab.configuration.flux_valid?
 
         metric = {
-          type: "set",
+          type: 'set',
           name: name,
           value: value.to_s,
           tags: tags,
@@ -127,7 +127,7 @@ module BrainzLab
           yield
         ensure
           duration_ms = (Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000
-          distribution(name, duration_ms, tags: tags.merge(unit: "ms"))
+          distribution(name, duration_ms, tags: tags.merge(unit: 'ms'))
         end
       end
 

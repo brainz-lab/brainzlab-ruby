@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "uri"
-require "json"
+require 'net/http'
+require 'uri'
+require 'json'
 
 module BrainzLab
   module Vision
@@ -22,7 +22,7 @@ module BrainzLab
         payload[:model] = model if model
         payload[:browser_provider] = browser_provider if browser_provider
 
-        post("/mcp/tools/vision_task", payload)
+        post('/mcp/tools/vision_task', payload)
       end
 
       # Create a browser session
@@ -32,7 +32,7 @@ module BrainzLab
         payload[:viewport] = viewport if viewport
         payload[:browser_provider] = browser_provider if browser_provider
 
-        post("/mcp/tools/vision_session_create", payload)
+        post('/mcp/tools/vision_session_create', payload)
       end
 
       # Perform an AI-powered action
@@ -43,7 +43,7 @@ module BrainzLab
         }
         payload[:model] = model if model
 
-        post("/mcp/tools/vision_ai_action", payload)
+        post('/mcp/tools/vision_ai_action', payload)
       end
 
       # Perform a direct browser action
@@ -55,7 +55,7 @@ module BrainzLab
         payload[:selector] = selector if selector
         payload[:value] = value if value
 
-        post("/mcp/tools/vision_perform", payload)
+        post('/mcp/tools/vision_perform', payload)
       end
 
       # Extract structured data
@@ -66,20 +66,20 @@ module BrainzLab
         }
         payload[:instruction] = instruction if instruction
 
-        post("/mcp/tools/vision_extract", payload)
+        post('/mcp/tools/vision_extract', payload)
       end
 
       # Close a session
       def close_session(session_id:)
-        post("/mcp/tools/vision_session_close", { session_id: session_id })
+        post('/mcp/tools/vision_session_close', { session_id: session_id })
       end
 
       # Take a screenshot
       def screenshot(session_id:, full_page: true)
-        post("/mcp/tools/vision_screenshot", {
-          session_id: session_id,
-          full_page: full_page
-        })
+        post('/mcp/tools/vision_screenshot', {
+               session_id: session_id,
+               full_page: full_page
+             })
       end
 
       private
@@ -87,9 +87,9 @@ module BrainzLab
       def post(path, payload)
         uri = URI.parse("#{@config.vision_url}#{path}")
         request = Net::HTTP::Post.new(uri)
-        request["Content-Type"] = "application/json"
-        request["Authorization"] = "Bearer #{auth_key}"
-        request["User-Agent"] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
+        request['Content-Type'] = 'application/json'
+        request['Authorization'] = "Bearer #{auth_key}"
+        request['User-Agent'] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
         request.body = JSON.generate(payload)
 
         response = execute(uri, request)
@@ -98,9 +98,9 @@ module BrainzLab
         when Net::HTTPSuccess
           JSON.parse(response.body, symbolize_names: true)
         when Net::HTTPUnauthorized
-          { error: "Unauthorized: Invalid API key" }
+          { error: 'Unauthorized: Invalid API key' }
         when Net::HTTPForbidden
-          { error: "Forbidden: Vision is not enabled for this project" }
+          { error: 'Forbidden: Vision is not enabled for this project' }
         when Net::HTTPNotFound
           { error: "Not found: #{path}" }
         else
@@ -118,9 +118,9 @@ module BrainzLab
 
       def execute(uri, request)
         http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == "https"
+        http.use_ssl = uri.scheme == 'https'
         http.open_timeout = 10
-        http.read_timeout = 300  # Long timeout for AI tasks
+        http.read_timeout = 300 # Long timeout for AI tasks
         http.request(request)
       end
     end

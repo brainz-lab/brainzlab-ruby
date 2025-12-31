@@ -75,7 +75,7 @@ module BrainzLab
         return if events.empty? && metrics.empty?
 
         @client.send_batch(events: events, metrics: metrics)
-      rescue => e
+      rescue StandardError => e
         BrainzLab.debug("[Flux] Batch send failed: #{e.message}")
       end
 
@@ -84,8 +84,8 @@ module BrainzLab
           loop do
             sleep FLUSH_INTERVAL
             begin
-              flush! if size > 0
-            rescue => e
+              flush! if size.positive?
+            rescue StandardError => e
               BrainzLab.debug("[Flux] Flush thread error: #{e.message}")
             end
           end

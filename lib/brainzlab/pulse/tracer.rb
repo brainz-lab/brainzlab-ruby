@@ -16,7 +16,7 @@ module BrainzLab
         Thread.current[:brainzlab_pulse_spans] ||= []
       end
 
-      def start_trace(name, kind: "custom", **attributes)
+      def start_trace(name, kind: 'custom', **attributes)
         trace = {
           trace_id: SecureRandom.uuid,
           name: name,
@@ -64,7 +64,7 @@ module BrainzLab
         payload
       end
 
-      def span(name, kind: "custom", **data)
+      def span(name, kind: 'custom', **data)
         span_data = {
           span_id: SecureRandom.uuid,
           name: name,
@@ -91,7 +91,7 @@ module BrainzLab
 
       private
 
-      def format_span(span, trace_started_at)
+      def format_span(span, _trace_started_at)
         {
           span_id: span[:span_id],
           parent_span_id: span[:parent_span_id],

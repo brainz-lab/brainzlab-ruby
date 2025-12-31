@@ -47,7 +47,7 @@ module BrainzLab
 
       def delete_pattern(pattern)
         @mutex.synchronize do
-          regex = Regexp.new(pattern.gsub("*", ".*"))
+          regex = Regexp.new(pattern.gsub('*', '.*'))
           @store.delete_if { |k, _| k.match?(regex) }
         end
       end

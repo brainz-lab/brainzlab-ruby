@@ -29,7 +29,7 @@ module BrainzLab
           end
 
           @installed = true
-          BrainzLab.debug_log("Sidekiq instrumentation installed")
+          BrainzLab.debug_log('Sidekiq instrumentation installed')
         end
 
         def installed?
@@ -47,11 +47,11 @@ module BrainzLab
           return yield unless should_trace?
 
           started_at = Time.now.utc
-          job_class = job["class"] || worker.class.name
-          job_id = job["jid"]
+          job_class = job['class'] || worker.class.name
+          job_id = job['jid']
 
           # Calculate queue wait time
-          enqueued_at = job["enqueued_at"] ? Time.at(job["enqueued_at"]) : nil
+          enqueued_at = job['enqueued_at'] ? Time.at(job['enqueued_at']) : nil
           queue_wait_ms = enqueued_at ? ((started_at - enqueued_at) * 1000).round(2) : nil
 
           # Extract parent trace context if present (distributed tracing)
@@ -63,9 +63,9 @@ module BrainzLab
           # Add breadcrumb
           BrainzLab::Reflex.add_breadcrumb(
             "Sidekiq #{job_class}",
-            category: "job.sidekiq",
+            category: 'job.sidekiq',
             level: :info,
-            data: { job_id: job_id, queue: queue, retry_count: job["retry_count"] }
+            data: { job_id: job_id, queue: queue, retry_count: job['retry_count'] }
           )
 
           # Initialize Pulse tracing
@@ -85,7 +85,7 @@ module BrainzLab
               queue: queue,
               started_at: started_at,
               queue_wait_ms: queue_wait_ms,
-              retry_count: job["retry_count"] || 0,
+              retry_count: job['retry_count'] || 0,
               parent_context: parent_context,
               error: error_occurred
             )
@@ -102,11 +102,11 @@ module BrainzLab
 
         def setup_context(job, queue)
           BrainzLab::Context.current.set_context(
-            job_class: job["class"],
-            job_id: job["jid"],
+            job_class: job['class'],
+            job_id: job['jid'],
             queue_name: queue,
-            retry_count: job["retry_count"],
-            arguments: job["args"]&.map(&:to_s)&.first(5)
+            retry_count: job['retry_count'],
+            arguments: job['args']&.map(&:to_s)&.first(5)
           )
         end
 
@@ -118,19 +118,20 @@ module BrainzLab
         end
 
         def extract_trace_context(job)
-          return nil unless job["_brainzlab_trace"]
+          return nil unless job['_brainzlab_trace']
 
-          trace_data = job["_brainzlab_trace"]
+          trace_data = job['_brainzlab_trace']
           BrainzLab::Pulse::Propagation::Context.new(
-            trace_id: trace_data["trace_id"],
-            span_id: trace_data["span_id"],
-            sampled: trace_data["sampled"] != false
+            trace_id: trace_data['trace_id'],
+            span_id: trace_data['span_id'],
+            sampled: trace_data['sampled'] != false
           )
         rescue StandardError
           nil
         end
 
-        def record_trace(job_class:, job_id:, queue:, started_at:, queue_wait_ms:, retry_count:, parent_context:, error:)
+        def record_trace(job_class:, job_id:, queue:, started_at:, queue_wait_ms:, retry_count:, parent_context:,
+                         error:)
           ended_at = Time.now.utc
           duration_ms = ((ended_at - started_at) * 1000).round(2)
 
@@ -156,7 +157,7 @@ module BrainzLab
           payload = {
             trace_id: SecureRandom.uuid,
             name: job_class,
-            kind: "job",
+            kind: 'job',
             started_at: started_at.utc.iso8601(3),
             ended_at: ended_at.utc.iso8601(3),
             duration_ms: duration_ms,
@@ -200,7 +201,7 @@ module BrainzLab
 
       # Client middleware - runs when jobs are enqueued
       class ClientMiddleware
-        def call(worker_class, job, queue, redis_pool)
+        def call(_worker_class, job, queue, _redis_pool)
           # Inject trace context for distributed tracing
           inject_trace_context(job)
 
@@ -208,9 +209,9 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "Enqueue #{job['class']}",
-              category: "job.sidekiq.enqueue",
+              category: 'job.sidekiq.enqueue',
               level: :info,
-              data: { queue: queue, job_id: job["jid"] }
+              data: { queue: queue, job_id: job['jid'] }
             )
           end
 
@@ -231,10 +232,10 @@ module BrainzLab
 
           return unless ctx&.valid?
 
-          job["_brainzlab_trace"] = {
-            "trace_id" => ctx.trace_id,
-            "span_id" => ctx.span_id,
-            "sampled" => ctx.sampled
+          job['_brainzlab_trace'] = {
+            'trace_id' => ctx.trace_id,
+            'span_id' => ctx.span_id,
+            'sampled' => ctx.sampled
           }
         rescue StandardError => e
           BrainzLab.debug_log("Failed to inject Sidekiq trace context: #{e.message}")
@@ -247,13 +248,13 @@ module BrainzLab
           spans << {
             span_id: SecureRandom.uuid,
             name: "Enqueue #{job['class']}",
-            kind: "job",
+            kind: 'job',
             started_at: Time.now.utc,
             ended_at: Time.now.utc,
             duration_ms: 0,
             data: {
-              job_class: job["class"],
-              job_id: job["jid"],
+              job_class: job['class'],
+              job_id: job['jid'],
               queue: queue
             }
           }

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative "recall/client"
-require_relative "recall/buffer"
-require_relative "recall/logger"
-require_relative "recall/provisioner"
+require_relative 'recall/client'
+require_relative 'recall/buffer'
+require_relative 'recall/logger'
+require_relative 'recall/provisioner'
 
 module BrainzLab
   module Recall
@@ -44,9 +44,7 @@ module BrainzLab
 
       def ensure_provisioned!
         config = BrainzLab.configuration
-        if config.debug
-          puts "[BrainzLab::Debug] Recall.ensure_provisioned! called, @provisioned=#{@provisioned}"
-        end
+        puts "[BrainzLab::Debug] Recall.ensure_provisioned! called, @provisioned=#{@provisioned}" if config.debug
 
         return if @provisioned
 
@@ -63,7 +61,7 @@ module BrainzLab
         result = yield
         duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round(1)
 
-        info("#{label} (#{duration_ms}ms)", **data.merge(duration_ms: duration_ms))
+        info("#{label} (#{duration_ms}ms)", **data, duration_ms: duration_ms)
         result
       end
 
@@ -131,11 +129,11 @@ module BrainzLab
         case obj
         when Hash
           obj.each_with_object({}) do |(key, value), result|
-            if should_scrub?(key, fields)
-              result[key] = "[FILTERED]"
-            else
-              result[key] = deep_scrub(value, fields)
-            end
+            result[key] = if should_scrub?(key, fields)
+                            '[FILTERED]'
+                          else
+                            deep_scrub(value, fields)
+                          end
           end
         when Array
           obj.map { |item| deep_scrub(item, fields) }

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "signal/client"
-require_relative "signal/provisioner"
+require_relative 'signal/client'
+require_relative 'signal/provisioner'
 
 module BrainzLab
   module Signal
@@ -21,7 +21,7 @@ module BrainzLab
         return unless BrainzLab.configuration.signal_valid?
 
         payload = {
-          type: "alert",
+          type: 'alert',
           name: name,
           message: message,
           severity: severity.to_s,
@@ -50,7 +50,7 @@ module BrainzLab
 
         channels = Array(channel)
         payload = {
-          type: "notification",
+          type: 'notification',
           channels: channels,
           message: message,
           title: title,
@@ -73,7 +73,7 @@ module BrainzLab
         return unless BrainzLab.configuration.signal_valid?
 
         payload = {
-          type: "trigger",
+          type: 'trigger',
           rule: rule_name,
           context: context,
           timestamp: Time.now.utc.iso8601(3),
@@ -87,8 +87,8 @@ module BrainzLab
       # Send a test alert to verify configuration
       def test!
         alert(
-          "test_alert",
-          "This is a test alert from BrainzLab Signal SDK",
+          'test_alert',
+          'This is a test alert from BrainzLab Signal SDK',
           severity: :info,
           data: { test: true, sdk_version: BrainzLab::VERSION }
         )

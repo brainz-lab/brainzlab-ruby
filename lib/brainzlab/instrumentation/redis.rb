@@ -18,7 +18,7 @@ module BrainzLab
           end
 
           @installed = true
-          BrainzLab.debug_log("Redis instrumentation installed")
+          BrainzLab.debug_log('Redis instrumentation installed')
         end
 
         def installed?
@@ -32,7 +32,7 @@ module BrainzLab
         private
 
         def redis_5_or_newer?
-          defined?(::Redis::VERSION) && Gem::Version.new(::Redis::VERSION) >= Gem::Version.new("5.0")
+          defined?(::Redis::VERSION) && Gem::Version.new(::Redis::VERSION) >= Gem::Version.new('5.0')
         end
 
         def install_middleware!
@@ -50,10 +50,6 @@ module BrainzLab
 
       # Middleware for Redis 5+ (RedisClient)
       module Middleware
-        def connect(redis_config)
-          super
-        end
-
         def call(command, redis_config)
           return super unless should_track?
 
@@ -78,10 +74,10 @@ module BrainzLab
           ignore.map(&:downcase).include?(cmd_name)
         end
 
-        def track_command(command, &block)
+        def track_command(command)
           return yield if should_skip_command?(command)
+
           started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          error_info = nil
 
           begin
             result = yield
@@ -94,9 +90,8 @@ module BrainzLab
           end
         end
 
-        def track_pipeline(commands, &block)
+        def track_pipeline(commands)
           started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          error_info = nil
 
           begin
             result = yield
@@ -119,7 +114,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "Redis #{cmd_name}",
-              category: "redis",
+              category: 'redis',
               level: level,
               data: {
                 command: cmd_name,
@@ -138,14 +133,14 @@ module BrainzLab
 
         def record_pipeline(commands, started_at, error = nil)
           duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round(2)
-          cmd_names = commands.map { |c| c.first.to_s.upcase }.uniq.join(", ")
+          cmd_names = commands.map { |c| c.first.to_s.upcase }.uniq.join(', ')
           level = error ? :error : :info
 
           # Add breadcrumb for Reflex
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "Redis PIPELINE (#{commands.size} commands)",
-              category: "redis",
+              category: 'redis',
               level: level,
               data: {
                 commands: cmd_names,
@@ -157,7 +152,7 @@ module BrainzLab
           end
 
           # Record span for Pulse APM
-          record_pulse_span("PIPELINE", nil, duration_ms, error, commands.size)
+          record_pulse_span('PIPELINE', nil, duration_ms, error, commands.size)
         rescue StandardError => e
           BrainzLab.debug_log("Redis instrumentation error: #{e.message}")
         end
@@ -169,7 +164,7 @@ module BrainzLab
           span = {
             span_id: SecureRandom.uuid,
             name: "Redis #{command}",
-            kind: "redis",
+            kind: 'redis',
             started_at: Time.now.utc - (duration_ms / 1000.0),
             ended_at: Time.now.utc,
             duration_ms: duration_ms,
@@ -210,7 +205,6 @@ module BrainzLab
           return super if should_skip_command?(command)
 
           started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          error_info = nil
 
           begin
             result = super
@@ -227,7 +221,6 @@ module BrainzLab
           return super unless should_track?
 
           started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          error_info = nil
           commands = pipeline.commands
 
           begin
@@ -262,7 +255,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "Redis #{cmd_name}",
-              category: "redis",
+              category: 'redis',
               level: level,
               data: {
                 command: cmd_name,
@@ -285,7 +278,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "Redis PIPELINE (#{commands.size} commands)",
-              category: "redis",
+              category: 'redis',
               level: level,
               data: {
                 count: commands.size,
@@ -295,7 +288,7 @@ module BrainzLab
             )
           end
 
-          record_pulse_span("PIPELINE", nil, duration_ms, error, commands.size)
+          record_pulse_span('PIPELINE', nil, duration_ms, error, commands.size)
         rescue StandardError => e
           BrainzLab.debug_log("Redis instrumentation error: #{e.message}")
         end
@@ -307,7 +300,7 @@ module BrainzLab
           span = {
             span_id: SecureRandom.uuid,
             name: "Redis #{command}",
-            kind: "redis",
+            kind: 'redis',
             started_at: Time.now.utc - (duration_ms / 1000.0),
             ended_at: Time.now.utc,
             duration_ms: duration_ms,

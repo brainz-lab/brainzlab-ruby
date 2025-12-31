@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative "utilities/rate_limiter"
-require_relative "utilities/circuit_breaker"
-require_relative "utilities/health_check"
-require_relative "utilities/log_formatter"
+require_relative 'utilities/rate_limiter'
+require_relative 'utilities/circuit_breaker'
+require_relative 'utilities/health_check'
+require_relative 'utilities/log_formatter'
 
 module BrainzLab
   module Utilities

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "vault/client"
-require_relative "vault/cache"
-require_relative "vault/provisioner"
+require_relative 'vault/client'
+require_relative 'vault/cache'
+require_relative 'vault/provisioner'
 
 module BrainzLab
   module Vault
@@ -35,11 +35,11 @@ module BrainzLab
         secrets = export(environment: env, format: :json)
         secrets.each do |key, value|
           key_str = key.to_s
-          if overwrite || !ENV.key?(key_str)
-            ENV[key_str] = value.to_s
-            loaded[key_str] = value
-            BrainzLab.debug_log("[Vault] Loaded #{key_str}")
-          end
+          next unless overwrite || !ENV.key?(key_str)
+
+          ENV[key_str] = value.to_s
+          loaded[key_str] = value
+          BrainzLab.debug_log("[Vault] Loaded #{key_str}")
         end
 
         # Load provider keys (OpenAI, Anthropic, etc.)
@@ -67,11 +67,11 @@ module BrainzLab
 
         provider_keys.each do |provider, key|
           env_var = "#{provider.to_s.upcase}_API_KEY"
-          if overwrite || !ENV.key?(env_var)
-            ENV[env_var] = key
-            loaded[env_var] = key
-            BrainzLab.debug_log("[Vault] Loaded provider key: #{env_var}")
-          end
+          next unless overwrite || !ENV.key?(env_var)
+
+          ENV[env_var] = key
+          loaded[env_var] = key
+          BrainzLab.debug_log("[Vault] Loaded provider key: #{env_var}")
         end
 
         loaded
@@ -84,7 +84,7 @@ module BrainzLab
       # @param provider [String, Symbol] Provider name (openai, anthropic, etc.)
       # @param model_type [String] Model type (llm, embedding, etc.)
       # @return [String, nil] The API key
-      def provider_key(provider, model_type: "llm")
+      def provider_key(provider, model_type: 'llm')
         return nil unless enabled?
 
         ensure_provisioned!
@@ -113,9 +113,7 @@ module BrainzLab
         cache_key = "#{env}:#{key}"
 
         # Check cache first
-        if BrainzLab.configuration.vault_cache_enabled && cache.has?(cache_key)
-          return cache.get(cache_key)
-        end
+        return cache.get(cache_key) if BrainzLab.configuration.vault_cache_enabled && cache.has?(cache_key)
 
         value = client.get(key, environment: env)
 
@@ -144,9 +142,7 @@ module BrainzLab
         result = client.set(key, value, environment: env, description: description, note: note)
 
         # Invalidate cache
-        if result && BrainzLab.configuration.vault_cache_enabled
-          cache.delete("#{env}:#{key}")
-        end
+        cache.delete("#{env}:#{key}") if result && BrainzLab.configuration.vault_cache_enabled
 
         result
       end
@@ -176,9 +172,7 @@ module BrainzLab
         result = client.delete(key)
 
         # Invalidate all environment caches for this key
-        if result && BrainzLab.configuration.vault_cache_enabled
-          cache.delete_pattern("*:#{key}")
-        end
+        cache.delete_pattern("*:#{key}") if result && BrainzLab.configuration.vault_cache_enabled
 
         result
       end
@@ -207,9 +201,9 @@ module BrainzLab
 
         # Fall back to environment variable
         if env_var
-          ENV[env_var]
+          ENV.fetch(env_var, nil)
         else
-          ENV[key]
+          ENV.fetch(key, nil)
         end
       end
 

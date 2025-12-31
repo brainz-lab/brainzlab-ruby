@@ -1,23 +1,23 @@
 # frozen_string_literal: true
 
-require_relative "brainzlab/version"
-require_relative "brainzlab/configuration"
-require_relative "brainzlab/context"
-require_relative "brainzlab/recall"
-require_relative "brainzlab/reflex"
-require_relative "brainzlab/pulse"
-require_relative "brainzlab/flux"
-require_relative "brainzlab/signal"
-require_relative "brainzlab/vault"
-require_relative "brainzlab/vision"
-require_relative "brainzlab/cortex"
-require_relative "brainzlab/beacon"
-require_relative "brainzlab/nerve"
-require_relative "brainzlab/dendrite"
-require_relative "brainzlab/sentinel"
-require_relative "brainzlab/synapse"
-require_relative "brainzlab/instrumentation"
-require_relative "brainzlab/utilities"
+require_relative 'brainzlab/version'
+require_relative 'brainzlab/configuration'
+require_relative 'brainzlab/context'
+require_relative 'brainzlab/recall'
+require_relative 'brainzlab/reflex'
+require_relative 'brainzlab/pulse'
+require_relative 'brainzlab/flux'
+require_relative 'brainzlab/signal'
+require_relative 'brainzlab/vault'
+require_relative 'brainzlab/vision'
+require_relative 'brainzlab/cortex'
+require_relative 'brainzlab/beacon'
+require_relative 'brainzlab/nerve'
+require_relative 'brainzlab/dendrite'
+require_relative 'brainzlab/sentinel'
+require_relative 'brainzlab/synapse'
+require_relative 'brainzlab/instrumentation'
+require_relative 'brainzlab/utilities'
 
 module BrainzLab
   class << self
@@ -60,8 +60,8 @@ module BrainzLab
       Context.current.set_tags(**data)
     end
 
-    def with_context(**data, &block)
-      Context.current.with_context(**data, &block)
+    def with_context(**data, &)
+      Context.current.with_context(**data, &)
     end
 
     def clear_context!
@@ -69,7 +69,7 @@ module BrainzLab
     end
 
     # Breadcrumb helpers
-    def add_breadcrumb(message, category: "default", level: :info, data: nil)
+    def add_breadcrumb(message, category: 'default', level: :info, data: nil)
       Reflex.add_breadcrumb(message, category: category, level: level, data: data)
     end
 
@@ -236,6 +236,4 @@ module BrainzLab
 end
 
 # Auto-load Rails integration if Rails is available
-if defined?(Rails::Railtie)
-  require_relative "brainzlab/rails/railtie"
-end
+require_relative 'brainzlab/rails/railtie' if defined?(Rails::Railtie)

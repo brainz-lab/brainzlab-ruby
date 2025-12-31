@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "cortex/client"
-require_relative "cortex/cache"
-require_relative "cortex/provisioner"
+require_relative 'cortex/client'
+require_relative 'cortex/cache'
+require_relative 'cortex/provisioner'
 
 module BrainzLab
   module Cortex
@@ -19,7 +19,7 @@ module BrainzLab
       #
       def enabled?(flag_name, **context)
         result = get(flag_name, **context)
-        result == true || result == "true"
+        [true, 'true'].include?(result)
       end
 
       # Check if a feature flag is disabled
@@ -50,9 +50,7 @@ module BrainzLab
         cache_key = build_cache_key(flag_key, merged_context)
 
         # Check cache first
-        if BrainzLab.configuration.cortex_cache_enabled && cache.has?(cache_key)
-          return cache.get(cache_key)
-        end
+        return cache.get(cache_key) if BrainzLab.configuration.cortex_cache_enabled && cache.has?(cache_key)
 
         result = client.evaluate(flag_key, context: merged_context)
 
@@ -194,9 +192,7 @@ module BrainzLab
 
         # Also include user from BrainzLab context if available
         brainzlab_context = {}
-        if BrainzLab::Context.current.user
-          brainzlab_context[:user] = BrainzLab::Context.current.user
-        end
+        brainzlab_context[:user] = BrainzLab::Context.current.user if BrainzLab::Context.current.user
 
         # Normalize user context
         merged = default_context.merge(brainzlab_context).merge(thread_context).merge(context)
@@ -220,7 +216,7 @@ module BrainzLab
 
         parts = [env, flag_name]
         parts << "u:#{user_id}" if user_id
-        parts.join(":")
+        parts.join(':')
       end
     end
   end

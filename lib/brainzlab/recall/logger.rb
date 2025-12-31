@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "logger"
+require 'logger'
 
 module BrainzLab
   module Recall
@@ -12,16 +12,14 @@ module BrainzLab
         @service_name = service_name
         @broadcast_to = broadcast_to
         @level = ::Logger::DEBUG
-        @formatter = proc { |severity, _time, _progname, msg| msg }
+        @formatter = proc { |_severity, _time, _progname, msg| msg }
       end
 
-      def add(severity, message = nil, progname = nil, &block)
+      def add(severity, message = nil, progname = nil)
         severity ||= ::Logger::UNKNOWN
 
         # Handle block-based messages
-        if message.nil? && block_given?
-          message = yield
-        end
+        message = yield if message.nil? && block_given?
 
         # Handle progname as message (standard Logger behavior)
         if message.nil?
@@ -52,28 +50,28 @@ module BrainzLab
         true
       end
 
-      def debug(message = nil, &block)
-        add(::Logger::DEBUG, message, &block)
+      def debug(message = nil, &)
+        add(::Logger::DEBUG, message, &)
       end
 
-      def info(message = nil, &block)
-        add(::Logger::INFO, message, &block)
+      def info(message = nil, &)
+        add(::Logger::INFO, message, &)
       end
 
-      def warn(message = nil, &block)
-        add(::Logger::WARN, message, &block)
+      def warn(message = nil, &)
+        add(::Logger::WARN, message, &)
       end
 
-      def error(message = nil, &block)
-        add(::Logger::ERROR, message, &block)
+      def error(message = nil, &)
+        add(::Logger::ERROR, message, &)
       end
 
-      def fatal(message = nil, &block)
-        add(::Logger::FATAL, message, &block)
+      def fatal(message = nil, &)
+        add(::Logger::FATAL, message, &)
       end
 
-      def unknown(message = nil, &block)
-        add(::Logger::UNKNOWN, message, &block)
+      def unknown(message = nil, &)
+        add(::Logger::UNKNOWN, message, &)
       end
 
       # Rails compatibility methods

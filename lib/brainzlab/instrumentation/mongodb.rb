@@ -26,7 +26,7 @@ module BrainzLab
           return unless installed_any
 
           @installed = true
-          BrainzLab.debug_log("MongoDB instrumentation installed")
+          BrainzLab.debug_log('MongoDB instrumentation installed')
         end
 
         def installed?
@@ -51,9 +51,9 @@ module BrainzLab
 
         def install_mongoid!
           # For Mongoid 7+, use the APM module
-          if ::Mongoid.respond_to?(:subscribe)
-            ::Mongoid.subscribe(CommandSubscriber.new)
-          end
+          return unless ::Mongoid.respond_to?(:subscribe)
+
+          ::Mongoid.subscribe(CommandSubscriber.new)
         end
       end
 
@@ -96,7 +96,7 @@ module BrainzLab
         def extract_collection(event)
           # Try to extract collection name from command
           cmd = event.command
-          cmd["collection"] || cmd[event.command_name] || cmd.keys.first
+          cmd['collection'] || cmd[event.command_name] || cmd.keys.first
         rescue StandardError
           nil
         end
@@ -116,7 +116,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "MongoDB #{command_name}",
-              category: "mongodb",
+              category: 'mongodb',
               level: level,
               data: {
                 command: command_name,
@@ -163,7 +163,7 @@ module BrainzLab
           span = {
             span_id: SecureRandom.uuid,
             name: "MongoDB #{command_name} #{collection}".strip,
-            kind: "mongodb",
+            kind: 'mongodb',
             started_at: started_at,
             ended_at: Time.now.utc,
             duration_ms: duration_ms.round(2),

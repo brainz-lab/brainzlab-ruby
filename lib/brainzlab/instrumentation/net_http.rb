@@ -24,7 +24,7 @@ module BrainzLab
       end
 
       module Patch
-        def request(req, body = nil, &block)
+        def request(req, body = nil, &)
           return super unless should_track?
 
           # Inject distributed tracing context into outgoing request headers
@@ -38,7 +38,7 @@ module BrainzLab
             response = super
             track_request(method, url, response.code.to_i, started_at)
             response
-          rescue => e
+          rescue StandardError => e
             track_request(method, url, nil, started_at, e.class.name)
             raise
           end
@@ -69,9 +69,9 @@ module BrainzLab
         end
 
         def build_url(req)
-          scheme = use_ssl? ? "https" : "http"
+          scheme = use_ssl? ? 'https' : 'http'
           port_str = if (use_ssl? && port == 443) || (!use_ssl? && port == 80)
-                       ""
+                       ''
                      else
                        ":#{port}"
                      end
@@ -86,7 +86,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "#{method} #{url}",
-              category: "http",
+              category: 'http',
               level: level,
               data: { method: method, url: url, status_code: status, duration_ms: duration_ms, error: error }.compact
             )
@@ -99,7 +99,7 @@ module BrainzLab
               method: method, url: url, status_code: status, duration_ms: duration_ms, error: error
             )
           end
-        rescue => e
+        rescue StandardError => e
           # Don't let instrumentation errors crash the app
           BrainzLab.configuration.logger&.error("[BrainzLab] HTTP instrumentation error: #{e.message}")
         end

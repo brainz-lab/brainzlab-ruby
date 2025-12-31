@@ -10,7 +10,7 @@ module BrainzLab
         @mutex = Mutex.new
       end
 
-      def add(message:, category: "default", level: :info, data: nil)
+      def add(message:, category: 'default', level: :info, data: nil)
         crumb = {
           timestamp: Time.now.utc.iso8601(3),
           message: message.to_s,
@@ -43,7 +43,7 @@ module BrainzLab
         Context.current.breadcrumbs
       end
 
-      def add_breadcrumb(message, category: "default", level: :info, data: nil)
+      def add_breadcrumb(message, category: 'default', level: :info, data: nil)
         breadcrumbs.add(message: message, category: category, level: level, data: data)
       end
 

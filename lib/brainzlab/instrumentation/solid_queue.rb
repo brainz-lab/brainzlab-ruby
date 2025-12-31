@@ -10,7 +10,7 @@ module BrainzLab
           install_job_instrumentation!
           install_worker_instrumentation!
 
-          BrainzLab.debug_log("[Instrumentation] SolidQueue instrumentation installed")
+          BrainzLab.debug_log('[Instrumentation] SolidQueue instrumentation installed')
         end
 
         private
@@ -31,10 +31,10 @@ module BrainzLab
 
         def install_worker_instrumentation!
           # Subscribe to ActiveSupport notifications for SolidQueue
-          if defined?(::ActiveSupport::Notifications)
-            ::ActiveSupport::Notifications.subscribe(/solid_queue/) do |name, start, finish, id, payload|
-              handle_notification(name, start, finish, payload)
-            end
+          return unless defined?(::ActiveSupport::Notifications)
+
+          ::ActiveSupport::Notifications.subscribe(/solid_queue/) do |name, start, finish, _id, payload|
+            handle_notification(name, start, finish, payload)
           end
         end
 
@@ -42,26 +42,26 @@ module BrainzLab
           duration_ms = ((finish - start) * 1000).round(2)
 
           case name
-          when "perform.solid_queue"
+          when 'perform.solid_queue'
             track_job_perform(payload, duration_ms)
-          when "enqueue.solid_queue"
+          when 'enqueue.solid_queue'
             track_job_enqueue(payload)
-          when "discard.solid_queue"
+          when 'discard.solid_queue'
             track_job_discard(payload)
-          when "retry.solid_queue"
+          when 'retry.solid_queue'
             track_job_retry(payload)
           end
         end
 
         def track_job_perform(payload, duration_ms)
           job_class = payload[:job]&.class&.name || payload[:job_class]
-          queue = payload[:queue] || "default"
+          queue = payload[:queue] || 'default'
 
           # Track with Pulse
           if BrainzLab.configuration.pulse_effectively_enabled?
             BrainzLab::Pulse.record_trace(
               "job.#{job_class}",
-              kind: "job",
+              kind: 'job',
               started_at: Time.now - (duration_ms / 1000.0),
               ended_at: Time.now,
               job_class: job_class,
@@ -77,18 +77,16 @@ module BrainzLab
           # Track with Flux
           if BrainzLab.configuration.flux_effectively_enabled?
             tags = { job_class: job_class, queue: queue }
-            BrainzLab::Flux.distribution("solid_queue.job.duration_ms", duration_ms, tags: tags)
-            BrainzLab::Flux.increment("solid_queue.job.processed", tags: tags)
+            BrainzLab::Flux.distribution('solid_queue.job.duration_ms', duration_ms, tags: tags)
+            BrainzLab::Flux.increment('solid_queue.job.processed', tags: tags)
 
-            if payload[:error]
-              BrainzLab::Flux.increment("solid_queue.job.failed", tags: tags)
-            end
+            BrainzLab::Flux.increment('solid_queue.job.failed', tags: tags) if payload[:error]
           end
 
           # Add breadcrumb for Reflex
           BrainzLab::Reflex.add_breadcrumb(
             "Job #{job_class} completed in #{duration_ms}ms",
-            category: "job",
+            category: 'job',
             level: payload[:error] ? :error : :info,
             data: { queue: queue, job_id: payload[:job_id], duration_ms: duration_ms }
           )
@@ -96,33 +94,33 @@ module BrainzLab
 
         def track_job_enqueue(payload)
           job_class = payload[:job]&.class&.name || payload[:job_class]
-          queue = payload[:queue] || "default"
+          queue = payload[:queue] || 'default'
 
-          if BrainzLab.configuration.flux_effectively_enabled?
-            BrainzLab::Flux.increment("solid_queue.job.enqueued", tags: { job_class: job_class, queue: queue })
-          end
+          return unless BrainzLab.configuration.flux_effectively_enabled?
+
+          BrainzLab::Flux.increment('solid_queue.job.enqueued', tags: { job_class: job_class, queue: queue })
         end
 
         def track_job_discard(payload)
           job_class = payload[:job]&.class&.name || payload[:job_class]
 
-          if BrainzLab.configuration.flux_effectively_enabled?
-            BrainzLab::Flux.increment("solid_queue.job.discarded", tags: { job_class: job_class })
-          end
+          return unless BrainzLab.configuration.flux_effectively_enabled?
+
+          BrainzLab::Flux.increment('solid_queue.job.discarded', tags: { job_class: job_class })
         end
 
         def track_job_retry(payload)
           job_class = payload[:job]&.class&.name || payload[:job_class]
 
-          if BrainzLab.configuration.flux_effectively_enabled?
-            BrainzLab::Flux.increment("solid_queue.job.retried", tags: { job_class: job_class })
-          end
+          return unless BrainzLab.configuration.flux_effectively_enabled?
+
+          BrainzLab::Flux.increment('solid_queue.job.retried', tags: { job_class: job_class })
         end
       end
 
       def self.around_perform(job)
         job_class = job.class.name
-        queue = job.queue_name || "default"
+        queue = job.queue_name || 'default'
         started_at = Time.now
 
         # Set context for the job
@@ -138,13 +136,12 @@ module BrainzLab
           # Capture error with Reflex
           if BrainzLab.configuration.reflex_effectively_enabled?
             BrainzLab::Reflex.capture(e,
-              tags: { job_class: job_class, queue: queue },
-              extra: {
-                job_id: job.job_id,
-                arguments: safe_arguments(job),
-                executions: job.executions
-              }
-            )
+                                      tags: { job_class: job_class, queue: queue },
+                                      extra: {
+                                        job_id: job.job_id,
+                                        arguments: safe_arguments(job),
+                                        executions: job.executions
+                                      })
           end
           raise
         ensure
@@ -154,7 +151,7 @@ module BrainzLab
           if BrainzLab.configuration.pulse_effectively_enabled?
             BrainzLab::Pulse.record_trace(
               "job.#{job_class}",
-              kind: "job",
+              kind: 'job',
               started_at: started_at,
               ended_at: Time.now,
               job_class: job_class,
@@ -167,7 +164,7 @@ module BrainzLab
           # Record metrics
           if BrainzLab.configuration.flux_effectively_enabled?
             tags = { job_class: job_class, queue: queue }
-            BrainzLab::Flux.distribution("solid_queue.job.duration_ms", duration_ms, tags: tags)
+            BrainzLab::Flux.distribution('solid_queue.job.duration_ms', duration_ms, tags: tags)
           end
 
           # Clear context
@@ -180,9 +177,8 @@ module BrainzLab
       rescue StandardError => e
         if BrainzLab.configuration.reflex_effectively_enabled?
           BrainzLab::Reflex.capture(e,
-            tags: { job_class: job.class.name, queue: job.queue_name },
-            extra: { job_id: job.job_id, arguments: safe_arguments(job) }
-          )
+                                    tags: { job_class: job.class.name, queue: job.queue_name },
+                                    extra: { job_id: job.job_id, arguments: safe_arguments(job) })
         end
         raise
       end
@@ -191,7 +187,7 @@ module BrainzLab
         args = job.arguments
         BrainzLab::Reflex.send(:filter_params, args) if args
       rescue StandardError
-        "[Unable to serialize]"
+        '[Unable to serialize]'
       end
     end
   end

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "uri"
-require "json"
+require 'net/http'
+require 'uri'
+require 'json'
 
 module BrainzLab
   module Recall
@@ -18,14 +18,14 @@ module BrainzLab
       def send_log(log_entry)
         return unless @config.recall_enabled && @config.valid?
 
-        post("/api/v1/log", log_entry)
+        post('/api/v1/log', log_entry)
       end
 
       def send_batch(log_entries)
         return unless @config.recall_enabled && @config.valid?
         return if log_entries.empty?
 
-        post("/api/v1/logs", { logs: log_entries })
+        post('/api/v1/logs', { logs: log_entries })
       end
 
       private
@@ -33,9 +33,9 @@ module BrainzLab
       def post(path, body)
         uri = URI.join(@config.recall_url, path)
         request = Net::HTTP::Post.new(uri)
-        request["Content-Type"] = "application/json"
-        request["Authorization"] = "Bearer #{@config.secret_key}"
-        request["User-Agent"] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
+        request['Content-Type'] = 'application/json'
+        request['Authorization'] = "Bearer #{@config.secret_key}"
+        request['User-Agent'] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
         request.body = JSON.generate(body)
 
         execute_with_retry(uri, request)
@@ -48,7 +48,7 @@ module BrainzLab
         retries = 0
         begin
           http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = uri.scheme == "https"
+          http.use_ssl = uri.scheme == 'https'
           http.open_timeout = 5
           http.read_timeout = 10
 
@@ -56,7 +56,11 @@ module BrainzLab
 
           case response.code.to_i
           when 200..299
-            JSON.parse(response.body) rescue {}
+            begin
+              JSON.parse(response.body)
+            rescue StandardError
+              {}
+            end
           when 429, 500..599
             raise RetryableError, "Server error: #{response.code}"
           else

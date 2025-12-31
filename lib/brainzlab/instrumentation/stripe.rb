@@ -9,7 +9,7 @@ module BrainzLab
 
           install_instrumentation!
 
-          BrainzLab.debug_log("[Instrumentation] Stripe instrumentation installed")
+          BrainzLab.debug_log('[Instrumentation] Stripe instrumentation installed')
         end
 
         private
@@ -63,8 +63,8 @@ module BrainzLab
 
               def extract_resource(path)
                 # /v1/customers/cus_xxx -> customers
-                parts = path.to_s.split("/").reject(&:empty?)
-                parts[1] || "unknown"
+                parts = path.to_s.split('/').reject(&:empty?)
+                parts[1] || 'unknown'
               end
             end
           end
@@ -73,11 +73,11 @@ module BrainzLab
         def track_event(event)
           duration_ms = (event[:duration] * 1000).round(2) if event[:duration]
           method = event[:method].to_s.upcase
-          resource = event[:path].to_s.split("/")[2] || "unknown"
+          resource = event[:path].to_s.split('/')[2] || 'unknown'
 
           BrainzLab::Reflex.add_breadcrumb(
             "Stripe #{method} #{resource}",
-            category: "payment",
+            category: 'payment',
             level: event[:error] ? :error : :info,
             data: {
               method: method,
@@ -88,24 +88,24 @@ module BrainzLab
             }
           )
 
-          if BrainzLab.configuration.flux_effectively_enabled?
-            tags = { method: method, resource: resource }
-            BrainzLab::Flux.distribution("stripe.duration_ms", duration_ms, tags: tags) if duration_ms
-            BrainzLab::Flux.increment("stripe.requests", tags: tags)
+          return unless BrainzLab.configuration.flux_effectively_enabled?
 
-            if event[:error]
-              BrainzLab::Flux.increment("stripe.errors", tags: tags.merge(error_type: event[:error_type]))
-            end
-          end
+          tags = { method: method, resource: resource }
+          BrainzLab::Flux.distribution('stripe.duration_ms', duration_ms, tags: tags) if duration_ms
+          BrainzLab::Flux.increment('stripe.requests', tags: tags)
+
+          return unless event[:error]
+
+          BrainzLab::Flux.increment('stripe.errors', tags: tags.merge(error_type: event[:error_type]))
         end
       end
 
-      def self.track_success(method, resource, path, started_at, response)
+      def self.track_success(method, resource, path, started_at, _response)
         duration_ms = ((Time.now - started_at) * 1000).round(2)
 
         BrainzLab::Reflex.add_breadcrumb(
           "Stripe #{method.to_s.upcase} #{resource}",
-          category: "payment",
+          category: 'payment',
           level: :info,
           data: {
             method: method.to_s.upcase,
@@ -115,28 +115,28 @@ module BrainzLab
           }
         )
 
-        if BrainzLab.configuration.flux_effectively_enabled?
-          tags = { method: method.to_s.upcase, resource: resource }
-          BrainzLab::Flux.distribution("stripe.duration_ms", duration_ms, tags: tags)
-          BrainzLab::Flux.increment("stripe.requests", tags: tags)
-        end
+        return unless BrainzLab.configuration.flux_effectively_enabled?
+
+        tags = { method: method.to_s.upcase, resource: resource }
+        BrainzLab::Flux.distribution('stripe.duration_ms', duration_ms, tags: tags)
+        BrainzLab::Flux.increment('stripe.requests', tags: tags)
       end
 
-      def self.track_error(method, resource, path, started_at, error)
-        duration_ms = ((Time.now - started_at) * 1000).round(2)
+      def self.track_error(method, resource, _path, started_at, error)
+        ((Time.now - started_at) * 1000).round(2)
         error_type = case error
-                     when Stripe::CardError then "card_error"
-                     when Stripe::RateLimitError then "rate_limit"
-                     when Stripe::InvalidRequestError then "invalid_request"
-                     when Stripe::AuthenticationError then "authentication"
-                     when Stripe::APIConnectionError then "connection"
-                     when Stripe::StripeError then "stripe_error"
-                     else "unknown"
+                     when Stripe::CardError then 'card_error'
+                     when Stripe::RateLimitError then 'rate_limit'
+                     when Stripe::InvalidRequestError then 'invalid_request'
+                     when Stripe::AuthenticationError then 'authentication'
+                     when Stripe::APIConnectionError then 'connection'
+                     when Stripe::StripeError then 'stripe_error'
+                     else 'unknown'
                      end
 
         BrainzLab::Reflex.add_breadcrumb(
           "Stripe #{method.to_s.upcase} #{resource} failed: #{error.message}",
-          category: "payment",
+          category: 'payment',
           level: :error,
           data: {
             method: method.to_s.upcase,
@@ -148,16 +148,15 @@ module BrainzLab
 
         if BrainzLab.configuration.flux_effectively_enabled?
           tags = { method: method.to_s.upcase, resource: resource, error_type: error_type }
-          BrainzLab::Flux.increment("stripe.errors", tags: tags)
+          BrainzLab::Flux.increment('stripe.errors', tags: tags)
         end
 
         # Capture with Reflex (but filter sensitive data)
-        if BrainzLab.configuration.reflex_effectively_enabled?
-          BrainzLab::Reflex.capture(error,
-            tags: { source: "stripe", resource: resource },
-            extra: { error_type: error_type }
-          )
-        end
+        return unless BrainzLab.configuration.reflex_effectively_enabled?
+
+        BrainzLab::Reflex.capture(error,
+                                  tags: { source: 'stripe', resource: resource },
+                                  extra: { error_type: error_type })
       end
     end
   end

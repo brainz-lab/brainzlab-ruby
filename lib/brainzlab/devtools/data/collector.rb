@@ -50,7 +50,7 @@ module BrainzLab
               logs: data[:logs] || [],
               memory: build_memory_data(data),
               user: context&.user,
-              breadcrumbs: context&.breadcrumbs&.to_a || []
+              breadcrumbs: context&.breadcrumbs.to_a
             }
           end
 
@@ -98,15 +98,15 @@ module BrainzLab
 
           def build_request_data(data, context)
             env = data[:env] || {}
-            request = env["action_dispatch.request"] || (defined?(ActionDispatch::Request) ? ActionDispatch::Request.new(env) : nil)
+            env['action_dispatch.request'] || (defined?(ActionDispatch::Request) ? ActionDispatch::Request.new(env) : nil)
 
             {
-              method: context&.request_method || env["REQUEST_METHOD"],
-              path: context&.request_path || env["PATH_INFO"],
-              url: context&.request_url || env["REQUEST_URI"],
+              method: context&.request_method || env['REQUEST_METHOD'],
+              path: context&.request_path || env['PATH_INFO'],
+              url: context&.request_url || env['REQUEST_URI'],
               params: context&.request_params || {},
               headers: extract_headers(env),
-              request_id: context&.request_id || env["action_dispatch.request_id"]
+              request_id: context&.request_id || env['action_dispatch.request_id']
             }
           end
 
@@ -149,8 +149,8 @@ module BrainzLab
           def extract_headers(env)
             headers = {}
             env.each do |key, value|
-              if key.start_with?("HTTP_")
-                header_name = key.sub("HTTP_", "").split("_").map(&:capitalize).join("-")
+              if key.start_with?('HTTP_')
+                header_name = key.sub('HTTP_', '').split('_').map(&:capitalize).join('-')
                 headers[header_name] = value
               end
             end
@@ -160,23 +160,23 @@ module BrainzLab
           def subscribe_to_events
             return unless defined?(ActiveSupport::Notifications)
 
-            @sql_subscriber = ActiveSupport::Notifications.subscribe("sql.active_record") do |*args|
+            @sql_subscriber = ActiveSupport::Notifications.subscribe('sql.active_record') do |*args|
               event = ActiveSupport::Notifications::Event.new(*args)
-              next if event.payload[:name] == "SCHEMA"
-              next if event.payload[:sql]&.start_with?("PRAGMA")
+              next if event.payload[:name] == 'SCHEMA'
+              next if event.payload[:sql]&.start_with?('PRAGMA')
 
               add_sql_query(
                 name: event.payload[:name],
                 duration: event.duration,
                 sql: event.payload[:sql],
-                cached: event.payload[:cached] || event.payload[:name] == "CACHE",
+                cached: event.payload[:cached] || event.payload[:name] == 'CACHE',
                 source: extract_source(caller)
               )
             end
 
             @view_subscriber = ActiveSupport::Notifications.subscribe(/render_.+\.action_view/) do |*args|
               event = ActiveSupport::Notifications::Event.new(*args)
-              type = event.name.include?("partial") ? :partial : :template
+              type = event.name.include?('partial') ? :partial : :template
 
               add_view(
                 type: type,
@@ -214,11 +214,11 @@ module BrainzLab
           def normalize_sql(sql)
             return nil unless sql
 
-            sql.gsub(/\b\d+\b/, "?")
-               .gsub(/'[^']*'/, "?")
-               .gsub(/\$\d+/, "?")
-               .gsub(%r{/\*.*?\*/}, "")
-               .gsub(/\s+/, " ")
+            sql.gsub(/\b\d+\b/, '?')
+               .gsub(/'[^']*'/, '?')
+               .gsub(/\$\d+/, '?')
+               .gsub(%r{/\*.*?\*/}, '')
+               .gsub(/\s+/, ' ')
                .strip
           end
 
@@ -230,11 +230,11 @@ module BrainzLab
 
           def extract_source(backtrace)
             backtrace.each do |line|
-              next if line.include?("/brainzlab")
-              next if line.include?("/gems/")
-              next if line.include?("/ruby/")
+              next if line.include?('/brainzlab')
+              next if line.include?('/gems/')
+              next if line.include?('/ruby/')
 
-              if line.include?("/app/")
+              if line.include?('/app/')
                 match = line.match(%r{(app/[^:]+:\d+)})
                 return match[1] if match
               end

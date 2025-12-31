@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "sentinel/client"
-require_relative "sentinel/provisioner"
+require_relative 'sentinel/client'
+require_relative 'sentinel/provisioner'
 
 module BrainzLab
   module Sentinel
@@ -45,7 +45,7 @@ module BrainzLab
       # @example
       #   metrics = BrainzLab::Sentinel.metrics(host_id, period: "24h", metrics: ["cpu", "memory"])
       #
-      def metrics(host_id, period: "1h", metrics: nil)
+      def metrics(host_id, period: '1h', metrics: nil)
         return nil unless enabled?
 
         ensure_provisioned!
@@ -63,7 +63,7 @@ module BrainzLab
       # @example
       #   procs = BrainzLab::Sentinel.processes(host_id, sort_by: "memory", limit: 10)
       #
-      def processes(host_id, sort_by: "cpu", limit: 20)
+      def processes(host_id, sort_by: 'cpu', limit: 20)
         return [] unless enabled?
 
         ensure_provisioned!
@@ -105,7 +105,7 @@ module BrainzLab
       # @param container_id [String] Container ID
       # @param period [String] Time period
       # @return [Hash, nil] Container metrics
-      def container_metrics(container_id, period: "1h")
+      def container_metrics(container_id, period: '1h')
         return nil unless enabled?
 
         ensure_provisioned!

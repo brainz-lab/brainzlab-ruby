@@ -14,7 +14,7 @@ module BrainzLab
           ::Faraday::Middleware.register_middleware(brainzlab: Middleware)
 
           @installed = true
-          BrainzLab.debug_log("Faraday instrumentation installed")
+          BrainzLab.debug_log('Faraday instrumentation installed')
         end
 
         def installed?
@@ -46,7 +46,6 @@ module BrainzLab
           inject_trace_context(env)
 
           started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          error_info = nil
 
           begin
             response = @app.call(env)
@@ -98,7 +97,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "#{method} #{url}",
-              category: "http.faraday",
+              category: 'http.faraday',
               level: level,
               data: {
                 method: method,
@@ -138,7 +137,7 @@ module BrainzLab
           span = {
             span_id: SecureRandom.uuid,
             name: "HTTP #{method} #{host}",
-            kind: "http",
+            kind: 'http',
             started_at: Time.now.utc - (duration_ms / 1000.0),
             ended_at: Time.now.utc,
             duration_ms: duration_ms,

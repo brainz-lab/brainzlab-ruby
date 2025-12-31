@@ -9,7 +9,7 @@ module BrainzLab
 
           install_plugin!
 
-          BrainzLab.debug_log("[Instrumentation] AWS SDK instrumentation installed")
+          BrainzLab.debug_log('[Instrumentation] AWS SDK instrumentation installed')
         end
 
         private
@@ -22,16 +22,16 @@ module BrainzLab
           end
 
           # Also hook into Seahorse for lower-level tracking
-          if defined?(::Seahorse::Client::Base)
-            install_seahorse_handler!
-          end
+          return unless defined?(::Seahorse::Client::Base)
+
+          install_seahorse_handler!
         end
 
         def install_seahorse_handler!
           handler_class = Class.new(::Seahorse::Client::Handler) do
             def call(context)
               started_at = Time.now
-              service = context.client.class.name.split("::")[1] || "AWS"
+              service = context.client.class.name.split('::')[1] || 'AWS'
               operation = context.operation_name.to_s
 
               begin
@@ -46,12 +46,12 @@ module BrainzLab
 
             private
 
-            def track_success(service, operation, started_at, context, response)
+            def track_success(service, operation, started_at, context, _response)
               duration_ms = ((Time.now - started_at) * 1000).round(2)
 
               BrainzLab::Reflex.add_breadcrumb(
                 "AWS #{service}.#{operation}",
-                category: "aws",
+                category: 'aws',
                 level: :info,
                 data: {
                   service: service,
@@ -61,19 +61,19 @@ module BrainzLab
                 }
               )
 
-              if BrainzLab.configuration.flux_effectively_enabled?
-                tags = { service: service, operation: operation, region: context.config.region }
-                BrainzLab::Flux.distribution("aws.duration_ms", duration_ms, tags: tags)
-                BrainzLab::Flux.increment("aws.requests", tags: tags)
-              end
+              return unless BrainzLab.configuration.flux_effectively_enabled?
+
+              tags = { service: service, operation: operation, region: context.config.region }
+              BrainzLab::Flux.distribution('aws.duration_ms', duration_ms, tags: tags)
+              BrainzLab::Flux.increment('aws.requests', tags: tags)
             end
 
-            def track_error(service, operation, started_at, context, error)
-              duration_ms = ((Time.now - started_at) * 1000).round(2)
+            def track_error(service, operation, started_at, _context, error)
+              ((Time.now - started_at) * 1000).round(2)
 
               BrainzLab::Reflex.add_breadcrumb(
                 "AWS #{service}.#{operation} failed: #{error.message}",
-                category: "aws",
+                category: 'aws',
                 level: :error,
                 data: {
                   service: service,
@@ -82,16 +82,16 @@ module BrainzLab
                 }
               )
 
-              if BrainzLab.configuration.flux_effectively_enabled?
-                tags = { service: service, operation: operation, error_class: error.class.name }
-                BrainzLab::Flux.increment("aws.errors", tags: tags)
-              end
+              return unless BrainzLab.configuration.flux_effectively_enabled?
+
+              tags = { service: service, operation: operation, error_class: error.class.name }
+              BrainzLab::Flux.increment('aws.errors', tags: tags)
             end
           end
 
           ::Seahorse::Client::Base.add_plugin(
             Class.new(::Seahorse::Client::Plugin) do
-              define_method(:add_handlers) do |handlers, config|
+              define_method(:add_handlers) do |handlers, _config|
                 handlers.add(handler_class, step: :validate, priority: 0)
               end
             end
@@ -101,7 +101,7 @@ module BrainzLab
 
       # Aws SDK Plugin
       class BrainzLabPlugin
-        def self.add_handlers(handlers, config)
+        def self.add_handlers(handlers, _config)
           handlers.add(Handler, step: :validate, priority: 0)
         end
 
@@ -128,16 +128,20 @@ module BrainzLab
           private
 
           def extract_service(context)
-            context.client.class.name.to_s.split("::")[1] || "AWS"
+            context.client.class.name.to_s.split('::')[1] || 'AWS'
           end
 
-          def track_request(service, operation, started_at, context, response)
+          def track_request(service, operation, started_at, context, _response)
             duration_ms = ((Time.now - started_at) * 1000).round(2)
-            region = context.config.region rescue "unknown"
+            region = begin
+              context.config.region
+            rescue StandardError
+              'unknown'
+            end
 
             BrainzLab::Reflex.add_breadcrumb(
               "AWS #{service}.#{operation}",
-              category: "aws",
+              category: 'aws',
               level: :info,
               data: {
                 service: service,
@@ -148,29 +152,29 @@ module BrainzLab
               }
             )
 
-            if BrainzLab.configuration.flux_effectively_enabled?
-              tags = { service: service, operation: operation, region: region }
-              BrainzLab::Flux.distribution("aws.duration_ms", duration_ms, tags: tags)
-              BrainzLab::Flux.increment("aws.requests", tags: tags)
+            return unless BrainzLab.configuration.flux_effectively_enabled?
 
-              if context.retries > 0
-                BrainzLab::Flux.increment("aws.retries", value: context.retries, tags: tags)
-              end
-            end
+            tags = { service: service, operation: operation, region: region }
+            BrainzLab::Flux.distribution('aws.duration_ms', duration_ms, tags: tags)
+            BrainzLab::Flux.increment('aws.requests', tags: tags)
+
+            return unless context.retries.positive?
+
+            BrainzLab::Flux.increment('aws.retries', value: context.retries, tags: tags)
           end
 
-          def track_error(service, operation, started_at, context, error)
+          def track_error(service, operation, _started_at, _context, error)
             BrainzLab::Reflex.add_breadcrumb(
               "AWS #{service}.#{operation} failed",
-              category: "aws",
+              category: 'aws',
               level: :error,
               data: { service: service, operation: operation, error: error.class.name }
             )
 
-            if BrainzLab.configuration.flux_effectively_enabled?
-              tags = { service: service, operation: operation, error_class: error.class.name }
-              BrainzLab::Flux.increment("aws.errors", tags: tags)
-            end
+            return unless BrainzLab.configuration.flux_effectively_enabled?
+
+            tags = { service: service, operation: operation, error_class: error.class.name }
+            BrainzLab::Flux.increment('aws.errors', tags: tags)
           end
         end
       end

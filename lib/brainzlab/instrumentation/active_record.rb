@@ -3,7 +3,7 @@
 module BrainzLab
   module Instrumentation
     class ActiveRecord
-      SCHEMA_QUERIES = ["SCHEMA", "EXPLAIN"].freeze
+      SCHEMA_QUERIES = %w[SCHEMA EXPLAIN].freeze
       INTERNAL_TABLES = %w[pg_ information_schema sqlite_ mysql.].freeze
 
       class << self
@@ -11,7 +11,7 @@ module BrainzLab
           return unless defined?(::ActiveRecord)
           return if @installed
 
-          ActiveSupport::Notifications.subscribe("sql.active_record") do |*args|
+          ActiveSupport::Notifications.subscribe('sql.active_record') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             next if skip_query?(event.payload)
 
@@ -19,7 +19,7 @@ module BrainzLab
           end
 
           @installed = true
-          BrainzLab.debug_log("ActiveRecord breadcrumbs installed")
+          BrainzLab.debug_log('ActiveRecord breadcrumbs installed')
         end
 
         def installed?
@@ -31,7 +31,7 @@ module BrainzLab
         def record_breadcrumb(event)
           payload = event.payload
           sql = payload[:sql]
-          name = payload[:name] || "SQL"
+          name = payload[:name] || 'SQL'
           duration = event.duration.round(2)
 
           # Extract operation type from SQL
@@ -69,15 +69,15 @@ module BrainzLab
         end
 
         def extract_operation(sql)
-          return "query" unless sql
+          return 'query' unless sql
 
           case sql.to_s.strip.upcase
-          when /\ASELECT/i then "select"
-          when /\AINSERT/i then "insert"
-          when /\AUPDATE/i then "update"
-          when /\ADELETE/i then "delete"
-          when /\ABEGIN/i, /\ACOMMIT/i, /\AROLLBACK/i then "transaction"
-          else "query"
+          when /\ASELECT/i then 'select'
+          when /\AINSERT/i then 'insert'
+          when /\AUPDATE/i then 'update'
+          when /\ADELETE/i then 'delete'
+          when /\ABEGIN/i, /\ACOMMIT/i, /\AROLLBACK/i then 'transaction'
+          else 'query'
           end
         end
 
@@ -102,9 +102,7 @@ module BrainzLab
           # Older versions used connection_class but that's removed in Rails 8.1
           if connection.respond_to?(:pool)
             pool = connection.pool
-            if pool.respond_to?(:db_config) && pool.db_config.respond_to?(:name)
-              pool.db_config.name
-            end
+            pool.db_config.name if pool.respond_to?(:db_config) && pool.db_config.respond_to?(:name)
           elsif connection.respond_to?(:db_config) && connection.db_config.respond_to?(:name)
             connection.db_config.name
           end
@@ -115,7 +113,7 @@ module BrainzLab
         def truncate_sql(sql)
           return nil unless sql
 
-          truncated = sql.to_s.gsub(/\s+/, " ").strip
+          truncated = sql.to_s.gsub(/\s+/, ' ').strip
           if truncated.length > 500
             "#{truncated[0, 497]}..."
           else

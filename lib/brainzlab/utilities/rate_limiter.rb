@@ -37,7 +37,7 @@ module BrainzLab
 
       # Check if request is allowed (doesn't consume a token)
       def allowed?
-        count, reset = get_current_count
+        count, = get_current_count
         count < @limit
       end
 
@@ -104,7 +104,7 @@ module BrainzLab
       end
 
       def get_current_count
-        bucket = current_bucket
+        current_bucket
         data = @store.get(@key) || { buckets: {}, created_at: Time.now.to_i }
 
         # Clean old buckets
@@ -147,15 +147,15 @@ module BrainzLab
         return unless BrainzLab.configuration.flux_effectively_enabled?
 
         if allowed
-          BrainzLab::Flux.increment("rate_limiter.allowed", tags: { key: sanitize_key(@key) })
+          BrainzLab::Flux.increment('rate_limiter.allowed', tags: { key: sanitize_key(@key) })
         else
-          BrainzLab::Flux.increment("rate_limiter.denied", tags: { key: sanitize_key(@key) })
+          BrainzLab::Flux.increment('rate_limiter.denied', tags: { key: sanitize_key(@key) })
         end
       end
 
       def sanitize_key(key)
         # Remove user-specific identifiers for aggregation
-        key.gsub(/:\d+/, ":*").gsub(/:[a-f0-9-]{36}/, ":*")
+        key.gsub(/:\d+/, ':*').gsub(/:[a-f0-9-]{36}/, ':*')
       end
 
       # Simple in-memory store (for development/single-instance)

@@ -5,7 +5,8 @@ module BrainzLab
     class LogFormatter
       ASSET_PATHS = %w[/assets /packs /vite /images /fonts /stylesheets /javascripts].freeze
       ASSET_EXTENSIONS = %w[.css .js .map .png .jpg .jpeg .gif .svg .ico .woff .woff2 .ttf .eot].freeze
-      SIMPLE_PATHS = %w[/up /health /healthz /ready /readiness /live /liveness /ping /favicon.ico /apple-touch-icon.png /apple-touch-icon-precomposed.png /robots.txt /sitemap.xml].freeze
+      SIMPLE_PATHS = %w[/up /health /healthz /ready /readiness /live /liveness /ping /favicon.ico /apple-touch-icon.png
+                        /apple-touch-icon-precomposed.png /robots.txt /sitemap.xml].freeze
       IGNORED_PATHS = %w[/apple-touch-icon.png /apple-touch-icon-precomposed.png /favicon.ico].freeze
 
       # Thresholds for highlighting
@@ -29,12 +30,12 @@ module BrainzLab
 
       # Box drawing characters
       BOX = {
-        top_left: "┌",
-        top_right: "─",
-        bottom_left: "└",
-        bottom_right: "─",
-        vertical: "│",
-        horizontal: "─"
+        top_left: '┌',
+        top_right: '─',
+        bottom_left: '└',
+        bottom_right: '─',
+        vertical: '│',
+        horizontal: '─'
       }.freeze
 
       attr_reader :config
@@ -54,7 +55,7 @@ module BrainzLab
           show_params: true,
           show_sql_count: true,
           show_sql_details: true,
-          show_sql_queries: true,  # Show actual SQL queries
+          show_sql_queries: true, # Show actual SQL queries
           show_views: true,
           slow_query_threshold: SLOW_QUERY_MS,
           n_plus_one_threshold: N_PLUS_ONE_THRESHOLD,
@@ -64,16 +65,16 @@ module BrainzLab
 
       def detect_terminal_width
         # Try to get terminal width, fallback to 120
-        width = ENV["COLUMNS"]&.to_i
-        return width if width && width > 0
+        width = ENV['COLUMNS']&.to_i
+        return width if width&.positive?
 
         if $stdout.tty? && IO.respond_to?(:console) && IO.console
           _rows, cols = IO.console.winsize
-          return cols if cols > 0
+          return cols if cols.positive?
         end
 
         120 # Default to 120 for wider output
-      rescue
+      rescue StandardError
         120
       end
 
@@ -231,12 +232,12 @@ module BrainzLab
           colorize(time, :gray),
           method,
           colorize(path, :white),
-          colorize("→", :gray),
+          colorize('→', :gray),
           status,
           duration
         ]
 
-        parts.join("  ") + "\n"
+        "#{parts.join('  ')}\n"
       end
 
       # Format full block output
@@ -250,40 +251,36 @@ module BrainzLab
         lines << header
 
         # Status line
-        status_text = data[:status] ? "#{data[:status]} #{status_phrase(data[:status])}" : "---"
-        lines << build_line("status", format_status_value(data[:status], status_text))
+        status_text = data[:status] ? "#{data[:status]} #{status_phrase(data[:status])}" : '---'
+        lines << build_line('status', format_status_value(data[:status], status_text))
 
         # Duration line
-        if data[:duration]
-          lines << build_line("duration", format_duration_full(data[:duration]))
-        end
+        lines << build_line('duration', format_duration_full(data[:duration])) if data[:duration]
 
         # Database line with query analysis
         if data[:db_runtime] || data[:sql_queries].any?
           db_info = format_db_info(data)
-          lines << build_line("db", db_info)
+          lines << build_line('db', db_info)
         end
 
         # Views line
-        if data[:view_runtime]
-          lines << build_line("views", "#{data[:view_runtime].round(1)}ms")
-        end
+        lines << build_line('views', "#{data[:view_runtime].round(1)}ms") if data[:view_runtime]
 
         # Params section (if enabled and present) - TOML style
         if config[:show_params] && data[:params].present?
           params_str = format_params(data[:params])
           if params_str
-            lines << build_line("", colorize("[params]", :gray))
+            lines << build_line('', colorize('[params]', :gray))
             lines << params_str
           end
         end
 
         # Error lines
         if data[:error]
-          lines << build_line("error", colorize(data[:error], :red))
+          lines << build_line('error', colorize(data[:error], :red))
           if data[:error_message]
             msg = truncate(data[:error_message], width - 15)
-            lines << build_line("message", colorize("\"#{msg}\"", :red))
+            lines << build_line('message', colorize("\"#{msg}\"", :red))
           end
         end
 
@@ -308,7 +305,7 @@ module BrainzLab
         # Footer line
         lines << build_footer(width)
 
-        lines.join("\n") + "\n\n"
+        "#{lines.join("\n")}\n\n"
       end
 
       def analyze_sql_queries(queries)
@@ -325,21 +322,20 @@ module BrainzLab
 
           # This is a potential N+1
           sample = matching_queries.first
-          source = sample[:source] || "unknown"
-          name = sample[:name] || "Query"
+          source = sample[:source] || 'unknown'
+          name = sample[:name] || 'Query'
 
           # Extract table name from pattern
           table_match = pattern.match(/FROM "?(\w+)"?/i)
           table = table_match ? table_match[1] : name
 
-          issues << build_line("", colorize("N+1", :red) + " " +
-            colorize("#{table} × #{matching_queries.size}", :yellow) +
-            colorize(" (#{source})", :gray))
+          issues << build_line('',
+                               "#{colorize('N+1',
+                                           :red)} #{colorize("#{table} × #{matching_queries.size}",
+                                                             :yellow)}#{colorize(" (#{source})", :gray)}")
 
           # Show the query SQL in TOML-like format
-          if config[:show_sql_queries] && sample[:sql]
-            issues << format_sql_toml(sample[:sql], sample[:duration])
-          end
+          issues << format_sql_toml(sample[:sql], sample[:duration]) if config[:show_sql_queries] && sample[:sql]
         end
 
         # Find slow queries (not cached, not already reported as N+1)
@@ -350,18 +346,17 @@ module BrainzLab
                               .first(3)
 
         slow_queries.each do |query|
-          source = query[:source] || "unknown"
-          name = query[:name] || "Query"
+          source = query[:source] || 'unknown'
+          name = query[:name] || 'Query'
           duration = query[:duration].round(1)
 
-          issues << build_line("", colorize("Slow", :yellow) + " " +
-            colorize("#{name} #{duration}ms", :white) +
-            colorize(" (#{source})", :gray))
+          issues << build_line('',
+                               "#{colorize('Slow',
+                                           :yellow)} #{colorize("#{name} #{duration}ms",
+                                                                :white)}#{colorize(" (#{source})", :gray)}")
 
           # Show the query SQL in TOML-like format
-          if config[:show_sql_queries] && query[:sql]
-            issues << format_sql_toml(query[:sql], query[:duration])
-          end
+          issues << format_sql_toml(query[:sql], query[:duration]) if config[:show_sql_queries] && query[:sql]
         end
 
         issues
@@ -370,7 +365,7 @@ module BrainzLab
       def format_sql_toml(sql, duration = nil)
         lines = []
         prefix = colorize("#{BOX[:vertical]}  ", :cyan)
-        indent = "     "
+        indent = '     '
 
         # Parse SQL to extract key components
         parsed = parse_sql(sql)
@@ -379,16 +374,15 @@ module BrainzLab
         lines << "#{prefix}#{indent}#{colorize('[query]', :gray)}"
 
         if parsed[:operation]
-          lines << "#{prefix}#{indent}#{colorize('operation', :gray)} = #{colorize("\"#{parsed[:operation]}\"", :green)}"
+          lines << "#{prefix}#{indent}#{colorize('operation',
+                                                 :gray)} = #{colorize("\"#{parsed[:operation]}\"", :green)}"
         end
 
-        if parsed[:table]
-          lines << "#{prefix}#{indent}#{colorize('table', :gray)} = #{colorize("\"#{parsed[:table]}\"", :green)}"
-        end
+        lines << "#{prefix}#{indent}#{colorize('table', :gray)} = #{colorize("\"#{parsed[:table]}\"", :green)}" if parsed[:table]
 
         if parsed[:columns].any?
-          cols = parsed[:columns].first(5).map { |c| "\"#{c}\"" }.join(", ")
-          cols += ", ..." if parsed[:columns].size > 5
+          cols = parsed[:columns].first(5).map { |c| "\"#{c}\"" }.join(', ')
+          cols += ', ...' if parsed[:columns].size > 5
           lines << "#{prefix}#{indent}#{colorize('columns', :gray)} = [#{colorize(cols, :cyan)}]"
         end
 
@@ -399,17 +393,11 @@ module BrainzLab
           end
         end
 
-        if parsed[:order]
-          lines << "#{prefix}#{indent}#{colorize('order', :gray)} = #{colorize("\"#{parsed[:order]}\"", :green)}"
-        end
+        lines << "#{prefix}#{indent}#{colorize('order', :gray)} = #{colorize("\"#{parsed[:order]}\"", :green)}" if parsed[:order]
 
-        if parsed[:limit]
-          lines << "#{prefix}#{indent}#{colorize('limit', :gray)} = #{colorize(parsed[:limit].to_s, :magenta)}"
-        end
+        lines << "#{prefix}#{indent}#{colorize('limit', :gray)} = #{colorize(parsed[:limit].to_s, :magenta)}" if parsed[:limit]
 
-        if duration
-          lines << "#{prefix}#{indent}#{colorize('duration_ms', :gray)} = #{colorize(duration.round(2).to_s, :magenta)}"
-        end
+        lines << "#{prefix}#{indent}#{colorize('duration_ms', :gray)} = #{colorize(duration.round(2).to_s, :magenta)}" if duration
 
         lines.join("\n")
       end
@@ -428,10 +416,10 @@ module BrainzLab
 
         # Detect operation
         result[:operation] = case sql
-                             when /^\s*SELECT/i then "SELECT"
-                             when /^\s*INSERT/i then "INSERT"
-                             when /^\s*UPDATE/i then "UPDATE"
-                             when /^\s*DELETE/i then "DELETE"
+                             when /^\s*SELECT/i then 'SELECT'
+                             when /^\s*INSERT/i then 'INSERT'
+                             when /^\s*UPDATE/i then 'UPDATE'
+                             when /^\s*DELETE/i then 'DELETE'
                              else sql.split.first&.upcase
                              end
 
@@ -447,9 +435,7 @@ module BrainzLab
         # Extract selected columns (for SELECT)
         if (match = sql.match(/SELECT\s+(.+?)\s+FROM/i))
           cols = match[1]
-          if cols.strip != "*"
-            result[:columns] = cols.split(",").map { |c| c.strip.gsub(/"/, "").split(".").last }
-          end
+          result[:columns] = cols.split(',').map { |c| c.strip.gsub('"', '').split('.').last } if cols.strip != '*'
         end
 
         # Extract WHERE conditions
@@ -485,10 +471,10 @@ module BrainzLab
         partial_counts = partials.group_by { |p| p[:template] }
 
         templates.each do |template|
-          duration = template[:duration] ? " (#{template[:duration].round(1)}ms)" : ""
-          lines << build_line("", colorize("View", :cyan) + " " +
-            colorize(template[:template], :white) +
-            colorize(duration, :gray))
+          duration = template[:duration] ? " (#{template[:duration].round(1)}ms)" : ''
+          lines << build_line('',
+                              "#{colorize('View',
+                                          :cyan)} #{colorize(template[:template], :white)}#{colorize(duration, :gray)}")
         end
 
         # Show partials that were rendered multiple times (potential issue)
@@ -496,9 +482,12 @@ module BrainzLab
           next if renders.size < 3 # Only show if rendered 3+ times
 
           total_duration = renders.sum { |r| r[:duration] || 0 }
-          lines << build_line("", colorize("Partial", :yellow) + " " +
-            colorize("#{name} × #{renders.size}", :white) +
-            colorize(" (#{total_duration.round(1)}ms total)", :gray))
+          lines << build_line('',
+                              "#{colorize('Partial',
+                                          :yellow)} #{colorize("#{name} × #{renders.size}",
+                                                               :white)}#{colorize(
+                                                                 " (#{total_duration.round(1)}ms total)", :gray
+                                                               )}")
         end
 
         lines
@@ -506,7 +495,7 @@ module BrainzLab
 
       def build_header(text, has_error, width)
         prefix = "#{BOX[:top_left]}#{BOX[:horizontal]} "
-        suffix = has_error ? " #{BOX[:horizontal]} ERROR #{BOX[:horizontal]}" : " "
+        suffix = has_error ? " #{BOX[:horizontal]} ERROR #{BOX[:horizontal]}" : ' '
 
         available = width - prefix.length - suffix.length
         text = truncate(text, available)
@@ -542,25 +531,25 @@ module BrainzLab
       end
 
       def format_time(time)
-        return "--:--:--" unless time
+        return '--:--:--' unless time
 
-        time.strftime("%H:%M:%S")
+        time.strftime('%H:%M:%S')
       end
 
       def format_method(method)
         method = method.to_s.upcase
         color = case method
-                when "GET" then :green
-                when "POST" then :blue
-                when "PUT", "PATCH" then :yellow
-                when "DELETE" then :red
+                when 'GET' then :green
+                when 'POST' then :blue
+                when 'PUT', 'PATCH' then :yellow
+                when 'DELETE' then :red
                 else :white
                 end
         colorize(method.ljust(6), color)
       end
 
       def format_status(status)
-        return colorize("---", :gray) unless status
+        return colorize('---', :gray) unless status
 
         color = case status
                 when 200..299 then :green
@@ -584,10 +573,10 @@ module BrainzLab
       end
 
       def format_duration(ms)
-        return colorize("--", :gray) unless ms
+        return colorize('--', :gray) unless ms
 
         formatted = if ms < 1
-                      "<1ms"
+                      '<1ms'
                     elsif ms < 1000
                       "#{ms.round}ms"
                     else
@@ -620,9 +609,7 @@ module BrainzLab
       def format_db_info(data)
         parts = []
 
-        if data[:db_runtime]
-          parts << "#{data[:db_runtime].round(1)}ms"
-        end
+        parts << "#{data[:db_runtime].round(1)}ms" if data[:db_runtime]
 
         if config[:show_sql_count]
           queries = data[:sql_queries] || []
@@ -631,25 +618,21 @@ module BrainzLab
           non_cached = total - cached
 
           query_text = "#{non_cached} #{non_cached == 1 ? 'query' : 'queries'}"
-          if cached.positive?
-            query_text += ", #{cached} cached"
-          end
+          query_text += ", #{cached} cached" if cached.positive?
           parts << "(#{query_text})"
         end
 
-        parts.join(" ")
+        parts.join(' ')
       end
 
       def format_params(params)
         return nil if params.empty?
 
         # Filter out controller, action, and duplicate keys
-        filtered = params.except("controller", "action", :controller, :action)
+        filtered = params.except('controller', 'action', :controller, :action)
 
         # Skip 'ingest' if 'logs' exists (they're the same data)
-        if filtered.key?("logs") || filtered.key?(:logs)
-          filtered = filtered.except("ingest", :ingest)
-        end
+        filtered = filtered.except('ingest', :ingest) if filtered.key?('logs') || filtered.key?(:logs)
 
         return nil if filtered.empty?
 
@@ -658,23 +641,27 @@ module BrainzLab
       end
 
       def hash_like?(obj)
-        obj.is_a?(Hash) || obj.respond_to?(:to_h) && obj.respond_to?(:each)
+        obj.is_a?(Hash) || (obj.respond_to?(:to_h) && obj.respond_to?(:each))
       end
 
-      def format_params_toml(params, prefix = "", depth = 0)
+      def format_params_toml(params, prefix = '', depth = 0)
         lines = []
         line_prefix = colorize("#{BOX[:vertical]}  ", :cyan)
-        indent = "     " + ("  " * depth)
+        indent = "     #{'  ' * depth}"
 
         params.each do |key, value|
           full_key = prefix.empty? ? key.to_s : "#{prefix}.#{key}"
 
           case value
           when Hash, ActionController::Parameters
-            value_hash = value.to_h rescue value
+            value_hash = begin
+              value.to_h
+            rescue StandardError
+              value
+            end
             if value_hash.keys.length <= 3 && value_hash.values.all? { |v| !hash_like?(v) && !v.is_a?(Array) }
               # Compact inline hash for simple cases
-              inline = value_hash.map { |k, v| "#{k} = #{format_value(v)}" }.join(", ")
+              inline = value_hash.map { |k, v| "#{k} = #{format_value(v)}" }.join(', ')
               lines << "#{line_prefix}#{indent}#{colorize(full_key, :white)} = { #{inline} }"
             else
               # Nested section - expand fully
@@ -684,9 +671,14 @@ module BrainzLab
                   # Recursively format nested hashes
                   lines << format_hash_nested(v.to_h, "#{full_key}.#{k}", depth + 1)
                 elsif v.is_a?(Array) && hash_like?(v.first)
-                  lines << "#{line_prefix}#{indent}  #{colorize("[[#{full_key}.#{k}]]", :gray)} #{colorize("# #{v.length} items", :gray)}"
+                  lines << "#{line_prefix}#{indent}  #{colorize("[[#{full_key}.#{k}]]",
+                                                                :gray)} #{colorize("# #{v.length} items", :gray)}"
                   if v.first
-                    first_hash = v.first.to_h rescue v.first
+                    first_hash = begin
+                      v.first.to_h
+                    rescue StandardError
+                      v.first
+                    end
                     first_hash.each do |nested_k, nested_v|
                       lines << "#{line_prefix}#{indent}  #{colorize(nested_k.to_s, :white)} = #{format_value(nested_v)}"
                     end
@@ -699,21 +691,31 @@ module BrainzLab
           when Array
             if value.length <= 5 && value.all? { |v| !hash_like?(v) && !v.is_a?(Array) }
               # Compact inline array
-              arr = value.map { |v| format_value(v) }.join(", ")
+              arr = value.map { |v| format_value(v) }.join(', ')
               lines << "#{line_prefix}#{indent}#{colorize(full_key, :white)} = [#{arr}]"
             elsif hash_like?(value.first)
               # Array of hashes (like logs array) - show each item
-              lines << "#{line_prefix}#{indent}#{colorize("[[#{full_key}]]", :gray)} #{colorize("# #{value.length} items", :gray)}"
+              lines << "#{line_prefix}#{indent}#{colorize("[[#{full_key}]]",
+                                                          :gray)} #{colorize("# #{value.length} items", :gray)}"
               # Show first item fully expanded
               if value.first
-                first_item = value.first.to_h rescue value.first
+                first_item = begin
+                  value.first.to_h
+                rescue StandardError
+                  value.first
+                end
                 first_item.each do |k, v|
                   if hash_like?(v)
                     # Expand nested hash fully
-                    nested_hash = v.to_h rescue v
+                    nested_hash = begin
+                      v.to_h
+                    rescue StandardError
+                      v
+                    end
                     lines << "#{line_prefix}#{indent}  #{colorize("[#{k}]", :gray)}"
                     nested_hash.each do |nested_k, nested_v|
-                      lines << "#{line_prefix}#{indent}    #{colorize(nested_k.to_s, :white)} = #{format_value(nested_v)}"
+                      lines << "#{line_prefix}#{indent}    #{colorize(nested_k.to_s,
+                                                                      :white)} = #{format_value(nested_v)}"
                     end
                   else
                     lines << "#{line_prefix}#{indent}  #{colorize(k.to_s, :white)} = #{format_value(v)}"
@@ -722,9 +724,11 @@ module BrainzLab
               end
             else
               # Large array of primitives
-              arr = value.first(5).map { |v| format_value(v) }.join(", ")
-              arr += ", ..." if value.length > 5
-              lines << "#{line_prefix}#{indent}#{colorize(full_key, :white)} = [#{arr}] #{colorize("# #{value.length} items", :gray)}"
+              arr = value.first(5).map { |v| format_value(v) }.join(', ')
+              arr += ', ...' if value.length > 5
+              lines << "#{line_prefix}#{indent}#{colorize(full_key,
+                                                          :white)} = [#{arr}] #{colorize("# #{value.length} items",
+                                                                                         :gray)}"
             end
           else
             lines << "#{line_prefix}#{indent}#{colorize(full_key, :white)} = #{format_value(value)}"
@@ -737,15 +741,15 @@ module BrainzLab
       def format_hash_nested(hash, prefix, depth)
         lines = []
         line_prefix = colorize("#{BOX[:vertical]}  ", :cyan)
-        indent = "     " + ("  " * depth)
+        indent = "     #{'  ' * depth}"
 
         lines << "#{line_prefix}#{indent}#{colorize("[#{prefix}]", :gray)}"
         hash.each do |k, v|
-          if v.is_a?(Hash)
-            lines << format_hash_nested(v, "#{prefix}.#{k}", depth + 1)
-          else
-            lines << "#{line_prefix}#{indent}  #{colorize(k.to_s, :white)} = #{format_value(v)}"
-          end
+          lines << if v.is_a?(Hash)
+                     format_hash_nested(v, "#{prefix}.#{k}", depth + 1)
+                   else
+                     "#{line_prefix}#{indent}  #{colorize(k.to_s, :white)} = #{format_value(v)}"
+                   end
         end
 
         lines.join("\n")
@@ -764,16 +768,18 @@ module BrainzLab
         when TrueClass, FalseClass
           colorize(value.to_s, :cyan)
         when NilClass
-          colorize("null", :gray)
+          colorize('null', :gray)
         when Hash
-          items = value.first(3).map { |k, v| "#{k} = #{format_value(v)}" }.join(", ")
-          items += ", ..." if value.keys.length > 3
+          items = value.first(3).map { |k, v| "#{k} = #{format_value(v)}" }.join(', ')
+          items += ', ...' if value.keys.length > 3
           "{ #{items} }"
         when Array
           if value.length <= 3
-            "[#{value.map { |v| format_value(v) }.join(", ")}]"
+            "[#{value.map { |v| format_value(v) }.join(', ')}]"
           else
-            "[#{value.first(3).map { |v| format_value(v) }.join(", ")}, ...] #{colorize("# #{value.length} items", :gray)}"
+            "[#{value.first(3).map do |v|
+              format_value(v)
+            end.join(', ')}, ...] #{colorize("# #{value.length} items", :gray)}"
           end
         else
           colorize(value.to_s, :white)
@@ -781,7 +787,7 @@ module BrainzLab
       end
 
       def status_phrase(status)
-        Rack::Utils::HTTP_STATUS_CODES[status] || "Unknown"
+        Rack::Utils::HTTP_STATUS_CODES[status] || 'Unknown'
       end
 
       def truncate(text, length)

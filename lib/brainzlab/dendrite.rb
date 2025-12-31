@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "dendrite/client"
-require_relative "dendrite/provisioner"
+require_relative 'dendrite/client'
+require_relative 'dendrite/provisioner'
 
 module BrainzLab
   module Dendrite
@@ -19,13 +19,13 @@ module BrainzLab
       #     branch: "main"
       #   )
       #
-      def connect(url, name: nil, branch: "main", **options)
+      def connect(url, name: nil, branch: 'main', **)
         return nil unless enabled?
 
         ensure_provisioned!
         return nil unless BrainzLab.configuration.dendrite_valid?
 
-        client.connect_repository(url: url, name: name, branch: branch, **options)
+        client.connect_repository(url: url, name: name, branch: branch, **)
       end
 
       # Trigger documentation sync for a repository

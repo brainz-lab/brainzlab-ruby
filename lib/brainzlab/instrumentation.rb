@@ -58,138 +58,138 @@ module BrainzLab
       end
 
       def install_net_http!
-        require_relative "instrumentation/net_http"
+        require_relative 'instrumentation/net_http'
         NetHttp.install!
       end
 
       def install_faraday!
         return unless defined?(::Faraday)
 
-        require_relative "instrumentation/faraday"
+        require_relative 'instrumentation/faraday'
         FaradayMiddleware.install!
       end
 
       def install_httparty!
         return unless defined?(::HTTParty)
 
-        require_relative "instrumentation/httparty"
+        require_relative 'instrumentation/httparty'
         HTTPartyInstrumentation.install!
       end
 
       def install_active_record!
-        require_relative "instrumentation/active_record"
+        require_relative 'instrumentation/active_record'
         ActiveRecord.install!
       end
 
       def install_redis!
         return unless defined?(::Redis)
 
-        require_relative "instrumentation/redis"
+        require_relative 'instrumentation/redis'
         RedisInstrumentation.install!
       end
 
       def install_sidekiq!
         return unless defined?(::Sidekiq)
 
-        require_relative "instrumentation/sidekiq"
+        require_relative 'instrumentation/sidekiq'
         SidekiqInstrumentation.install!
       end
 
       def install_graphql!
         return unless defined?(::GraphQL)
 
-        require_relative "instrumentation/graphql"
+        require_relative 'instrumentation/graphql'
         GraphQLInstrumentation.install!
       end
 
       def install_mongodb!
         return unless defined?(::Mongo) || defined?(::Mongoid)
 
-        require_relative "instrumentation/mongodb"
+        require_relative 'instrumentation/mongodb'
         MongoDBInstrumentation.install!
       end
 
       def install_elasticsearch!
         return unless defined?(::Elasticsearch) || defined?(::OpenSearch)
 
-        require_relative "instrumentation/elasticsearch"
+        require_relative 'instrumentation/elasticsearch'
         ElasticsearchInstrumentation.install!
       end
 
       def install_action_mailer!
         return unless defined?(::ActionMailer)
 
-        require_relative "instrumentation/action_mailer"
+        require_relative 'instrumentation/action_mailer'
         ActionMailerInstrumentation.install!
       end
 
       def install_delayed_job!
         return unless defined?(::Delayed::Job) || defined?(::Delayed::Backend)
 
-        require_relative "instrumentation/delayed_job"
+        require_relative 'instrumentation/delayed_job'
         DelayedJobInstrumentation.install!
       end
 
       def install_grape!
         return unless defined?(::Grape::API)
 
-        require_relative "instrumentation/grape"
+        require_relative 'instrumentation/grape'
         GrapeInstrumentation.install!
       end
 
       def install_solid_queue!
         return unless defined?(::SolidQueue)
 
-        require_relative "instrumentation/solid_queue"
+        require_relative 'instrumentation/solid_queue'
         SolidQueueInstrumentation.install!
       end
 
       def install_good_job!
         return unless defined?(::GoodJob)
 
-        require_relative "instrumentation/good_job"
+        require_relative 'instrumentation/good_job'
         GoodJobInstrumentation.install!
       end
 
       def install_resque!
         return unless defined?(::Resque)
 
-        require_relative "instrumentation/resque"
+        require_relative 'instrumentation/resque'
         ResqueInstrumentation.install!
       end
 
       def install_excon!
         return unless defined?(::Excon)
 
-        require_relative "instrumentation/excon"
+        require_relative 'instrumentation/excon'
         ExconInstrumentation.install!
       end
 
       def install_typhoeus!
         return unless defined?(::Typhoeus)
 
-        require_relative "instrumentation/typhoeus"
+        require_relative 'instrumentation/typhoeus'
         TyphoeusInstrumentation.install!
       end
 
       def install_dalli!
         return unless defined?(::Dalli::Client)
 
-        require_relative "instrumentation/dalli"
+        require_relative 'instrumentation/dalli'
         DalliInstrumentation.install!
       end
 
       def install_aws!
         return unless defined?(::Aws)
 
-        require_relative "instrumentation/aws"
+        require_relative 'instrumentation/aws'
         AWSInstrumentation.install!
       end
 
       def install_stripe!
         return unless defined?(::Stripe)
 
-        require_relative "instrumentation/stripe"
+        require_relative 'instrumentation/stripe'
         StripeInstrumentation.install!
       end
 

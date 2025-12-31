@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "json"
-require "uri"
+require 'net/http'
+require 'json'
+require 'uri'
 
 module BrainzLab
   module Synapse
     class Client
       def initialize(config)
         @config = config
-        @base_url = config.synapse_url || "https://synapse.brainzlab.ai"
+        @base_url = config.synapse_url || 'https://synapse.brainzlab.ai'
       end
 
       # List all projects
@@ -17,14 +17,14 @@ module BrainzLab
         params = { page: page, per_page: per_page }
         params[:status] = status if status
 
-        response = request(:get, "/api/v1/projects", params: params)
+        response = request(:get, '/api/v1/projects', params: params)
 
         return [] unless response.is_a?(Net::HTTPSuccess)
 
         data = JSON.parse(response.body, symbolize_names: true)
         data[:projects] || []
       rescue StandardError => e
-        log_error("list_projects", e)
+        log_error('list_projects', e)
         []
       end
 
@@ -36,7 +36,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("get_project", e)
+        log_error('get_project', e)
         nil
       end
 
@@ -44,7 +44,7 @@ module BrainzLab
       def create_project(name:, repos: [], description: nil, **options)
         response = request(
           :post,
-          "/api/v1/projects",
+          '/api/v1/projects',
           body: {
             name: name,
             description: description,
@@ -57,7 +57,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("create_project", e)
+        log_error('create_project', e)
         nil
       end
 
@@ -66,7 +66,7 @@ module BrainzLab
         response = request(:post, "/api/v1/projects/#{project_id}/up")
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPAccepted)
       rescue StandardError => e
-        log_error("start_project", e)
+        log_error('start_project', e)
         false
       end
 
@@ -75,7 +75,7 @@ module BrainzLab
         response = request(:post, "/api/v1/projects/#{project_id}/down")
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPAccepted)
       rescue StandardError => e
-        log_error("stop_project", e)
+        log_error('stop_project', e)
         false
       end
 
@@ -84,7 +84,7 @@ module BrainzLab
         response = request(:post, "/api/v1/projects/#{project_id}/restart")
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPAccepted)
       rescue StandardError => e
-        log_error("restart_project", e)
+        log_error('restart_project', e)
         false
       end
 
@@ -103,7 +103,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("deploy", e)
+        log_error('deploy', e)
         nil
       end
 
@@ -115,7 +115,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("get_deployment", e)
+        log_error('get_deployment', e)
         nil
       end
 
@@ -123,7 +123,7 @@ module BrainzLab
       def create_task(project_id:, description:, type: nil, priority: nil, **options)
         response = request(
           :post,
-          "/api/v1/tasks",
+          '/api/v1/tasks',
           body: {
             project_id: project_id,
             description: description,
@@ -137,7 +137,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("create_task", e)
+        log_error('create_task', e)
         nil
       end
 
@@ -149,7 +149,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("get_task", e)
+        log_error('get_task', e)
         nil
       end
 
@@ -161,7 +161,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("get_task_status", e)
+        log_error('get_task_status', e)
         nil
       end
 
@@ -171,14 +171,14 @@ module BrainzLab
         params[:project_id] = project_id if project_id
         params[:status] = status if status
 
-        response = request(:get, "/api/v1/tasks", params: params)
+        response = request(:get, '/api/v1/tasks', params: params)
 
         return [] unless response.is_a?(Net::HTTPSuccess)
 
         data = JSON.parse(response.body, symbolize_names: true)
         data[:tasks] || []
       rescue StandardError => e
-        log_error("list_tasks", e)
+        log_error('list_tasks', e)
         []
       end
 
@@ -187,7 +187,7 @@ module BrainzLab
         response = request(:post, "/api/v1/tasks/#{task_id}/cancel")
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPAccepted)
       rescue StandardError => e
-        log_error("cancel_task", e)
+        log_error('cancel_task', e)
         false
       end
 
@@ -203,7 +203,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("get_logs", e)
+        log_error('get_logs', e)
         nil
       end
 
@@ -223,21 +223,21 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("exec", e)
+        log_error('exec', e)
         nil
       end
 
       def provision(project_id:, app_name:)
         response = request(
           :post,
-          "/api/v1/projects/provision",
+          '/api/v1/projects/provision',
           body: { project_id: project_id, app_name: app_name },
           use_service_key: true
         )
 
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPCreated)
       rescue StandardError => e
-        log_error("provision", e)
+        log_error('provision', e)
         false
       end
 
@@ -246,34 +246,32 @@ module BrainzLab
       def request(method, path, headers: {}, body: nil, params: nil, use_service_key: false)
         uri = URI.parse("#{@base_url}#{path}")
 
-        if params
-          uri.query = URI.encode_www_form(params)
-        end
+        uri.query = URI.encode_www_form(params) if params
 
         http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == "https"
+        http.use_ssl = uri.scheme == 'https'
         http.open_timeout = 10
-        http.read_timeout = 120  # Longer timeout for AI tasks
+        http.read_timeout = 120 # Longer timeout for AI tasks
 
         request = case method
-        when :get
-          Net::HTTP::Get.new(uri)
-        when :post
-          Net::HTTP::Post.new(uri)
-        when :put
-          Net::HTTP::Put.new(uri)
-        when :delete
-          Net::HTTP::Delete.new(uri)
-        end
+                  when :get
+                    Net::HTTP::Get.new(uri)
+                  when :post
+                    Net::HTTP::Post.new(uri)
+                  when :put
+                    Net::HTTP::Put.new(uri)
+                  when :delete
+                    Net::HTTP::Delete.new(uri)
+                  end
 
-        request["Content-Type"] = "application/json"
-        request["Accept"] = "application/json"
+        request['Content-Type'] = 'application/json'
+        request['Accept'] = 'application/json'
 
         if use_service_key
-          request["X-Service-Key"] = @config.synapse_master_key || @config.secret_key
+          request['X-Service-Key'] = @config.synapse_master_key || @config.secret_key
         else
           auth_key = @config.synapse_api_key || @config.secret_key
-          request["Authorization"] = "Bearer #{auth_key}" if auth_key
+          request['Authorization'] = "Bearer #{auth_key}" if auth_key
         end
 
         headers.each { |k, v| request[k] = v }

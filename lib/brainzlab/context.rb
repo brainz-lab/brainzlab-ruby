@@ -14,9 +14,8 @@ module BrainzLab
       end
     end
 
-    attr_accessor :user, :request_id, :session_id
-    attr_accessor :request_method, :request_path, :request_url, :request_params, :request_headers
-    attr_accessor :controller, :action
+    attr_accessor :user, :request_id, :session_id, :request_method, :request_path, :request_url, :request_params,
+                  :request_headers, :controller, :action
     attr_reader :extra, :tags, :breadcrumbs
 
     def initialize

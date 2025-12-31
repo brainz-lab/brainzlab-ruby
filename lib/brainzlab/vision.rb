@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "vision/client"
-require_relative "vision/provisioner"
+require_relative 'vision/client'
+require_relative 'vision/provisioner'
 
 module BrainzLab
   module Vision
@@ -16,10 +16,10 @@ module BrainzLab
       # @return [Hash] Task result with extracted data
       def execute_task(instruction:, start_url:, model: nil, browser_provider: nil, max_steps: 50, timeout: 300)
         config = BrainzLab.configuration
-        return { error: "Vision is not enabled" } unless config.vision_enabled
+        return { error: 'Vision is not enabled' } unless config.vision_enabled
 
         ensure_provisioned!
-        return { error: "Vision credentials not configured" } unless config.vision_valid?
+        return { error: 'Vision credentials not configured' } unless config.vision_valid?
 
         client.execute_task(
           instruction: instruction,
@@ -38,10 +38,10 @@ module BrainzLab
       # @return [Hash] Session info with session_id
       def create_session(url: nil, viewport: nil, browser_provider: nil)
         config = BrainzLab.configuration
-        return { error: "Vision is not enabled" } unless config.vision_enabled
+        return { error: 'Vision is not enabled' } unless config.vision_enabled
 
         ensure_provisioned!
-        return { error: "Vision credentials not configured" } unless config.vision_valid?
+        return { error: 'Vision credentials not configured' } unless config.vision_valid?
 
         client.create_session(
           url: url,
@@ -57,8 +57,8 @@ module BrainzLab
       # @return [Hash] Action result
       def ai_action(session_id:, instruction:, model: nil)
         config = BrainzLab.configuration
-        return { error: "Vision is not enabled" } unless config.vision_enabled
-        return { error: "Vision credentials not configured" } unless config.vision_valid?
+        return { error: 'Vision is not enabled' } unless config.vision_enabled
+        return { error: 'Vision credentials not configured' } unless config.vision_valid?
 
         client.ai_action(
           session_id: session_id,
@@ -75,8 +75,8 @@ module BrainzLab
       # @return [Hash] Action result
       def perform(session_id:, action:, selector: nil, value: nil)
         config = BrainzLab.configuration
-        return { error: "Vision is not enabled" } unless config.vision_enabled
-        return { error: "Vision credentials not configured" } unless config.vision_valid?
+        return { error: 'Vision is not enabled' } unless config.vision_enabled
+        return { error: 'Vision credentials not configured' } unless config.vision_valid?
 
         client.perform(
           session_id: session_id,
@@ -93,8 +93,8 @@ module BrainzLab
       # @return [Hash] Extracted data
       def extract(session_id:, schema:, instruction: nil)
         config = BrainzLab.configuration
-        return { error: "Vision is not enabled" } unless config.vision_enabled
-        return { error: "Vision credentials not configured" } unless config.vision_valid?
+        return { error: 'Vision is not enabled' } unless config.vision_enabled
+        return { error: 'Vision credentials not configured' } unless config.vision_valid?
 
         client.extract(
           session_id: session_id,
@@ -108,8 +108,8 @@ module BrainzLab
       # @return [Hash] Close result
       def close_session(session_id:)
         config = BrainzLab.configuration
-        return { error: "Vision is not enabled" } unless config.vision_enabled
-        return { error: "Vision credentials not configured" } unless config.vision_valid?
+        return { error: 'Vision is not enabled' } unless config.vision_enabled
+        return { error: 'Vision credentials not configured' } unless config.vision_valid?
 
         client.close_session(session_id: session_id)
       end
@@ -120,8 +120,8 @@ module BrainzLab
       # @return [Hash] Screenshot data
       def screenshot(session_id:, full_page: true)
         config = BrainzLab.configuration
-        return { error: "Vision is not enabled" } unless config.vision_enabled
-        return { error: "Vision credentials not configured" } unless config.vision_valid?
+        return { error: 'Vision is not enabled' } unless config.vision_enabled
+        return { error: 'Vision credentials not configured' } unless config.vision_valid?
 
         client.screenshot(session_id: session_id, full_page: full_page)
       end
@@ -129,9 +129,7 @@ module BrainzLab
       # Ensure project is auto-provisioned
       def ensure_provisioned!
         config = BrainzLab.configuration
-        if config.debug
-          puts "[BrainzLab::Debug] Vision.ensure_provisioned! called, @provisioned=#{@provisioned}"
-        end
+        puts "[BrainzLab::Debug] Vision.ensure_provisioned! called, @provisioned=#{@provisioned}" if config.debug
 
         return if @provisioned
 

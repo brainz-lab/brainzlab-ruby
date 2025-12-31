@@ -11,7 +11,7 @@ module BrainzLab
 
           install_client_instrumentation!
 
-          BrainzLab.debug_log("[Instrumentation] Dalli/Memcached instrumentation installed")
+          BrainzLab.debug_log('[Instrumentation] Dalli/Memcached instrumentation installed')
         end
 
         private
@@ -54,42 +54,42 @@ module BrainzLab
         # Add breadcrumb
         BrainzLab::Reflex.add_breadcrumb(
           "Memcached #{command.upcase}",
-          category: "cache",
+          category: 'cache',
           level: :info,
           data: { command: command, key: key, duration_ms: duration_ms }
         )
 
         # Track with Flux
-        if BrainzLab.configuration.flux_effectively_enabled?
-          tags = { command: command }
-          BrainzLab::Flux.distribution("memcached.duration_ms", duration_ms, tags: tags)
-          BrainzLab::Flux.increment("memcached.commands", tags: tags)
+        return unless BrainzLab.configuration.flux_effectively_enabled?
 
-          # Track cache hits/misses for get commands
-          if command == "get"
-            if result.nil?
-              BrainzLab::Flux.increment("memcached.miss", tags: tags)
-            else
-              BrainzLab::Flux.increment("memcached.hit", tags: tags)
-            end
-          end
+        tags = { command: command }
+        BrainzLab::Flux.distribution('memcached.duration_ms', duration_ms, tags: tags)
+        BrainzLab::Flux.increment('memcached.commands', tags: tags)
+
+        # Track cache hits/misses for get commands
+        return unless command == 'get'
+
+        if result.nil?
+          BrainzLab::Flux.increment('memcached.miss', tags: tags)
+        else
+          BrainzLab::Flux.increment('memcached.hit', tags: tags)
         end
       end
 
       def self.track_error(command, args, started_at, error)
-        duration_ms = ((Time.now - started_at) * 1000).round(2)
+        ((Time.now - started_at) * 1000).round(2)
         key = extract_key(args)
 
         BrainzLab::Reflex.add_breadcrumb(
           "Memcached #{command.upcase} failed: #{error.message}",
-          category: "cache",
+          category: 'cache',
           level: :error,
           data: { command: command, key: key, error: error.class.name }
         )
 
-        if BrainzLab.configuration.flux_effectively_enabled?
-          BrainzLab::Flux.increment("memcached.errors", tags: { command: command })
-        end
+        return unless BrainzLab.configuration.flux_effectively_enabled?
+
+        BrainzLab::Flux.increment('memcached.errors', tags: { command: command })
       end
 
       def self.extract_key(args)

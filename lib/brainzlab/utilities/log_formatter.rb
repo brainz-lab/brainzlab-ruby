@@ -27,21 +27,21 @@ module BrainzLab
       }.freeze
 
       SEVERITY_ICONS = {
-        "DEBUG" => "🔍",
-        "INFO" => "ℹ️ ",
-        "WARN" => "⚠️ ",
-        "ERROR" => "❌",
-        "FATAL" => "💀"
+        'DEBUG' => '🔍',
+        'INFO' => 'ℹ️ ',
+        'WARN' => '⚠️ ',
+        'ERROR' => '❌',
+        'FATAL' => '💀'
       }.freeze
 
       HTTP_METHODS = {
-        "GET" => "\e[32m",     # Green
-        "POST" => "\e[33m",    # Yellow
-        "PUT" => "\e[34m",     # Blue
-        "PATCH" => "\e[34m",   # Blue
-        "DELETE" => "\e[31m",  # Red
-        "HEAD" => "\e[36m",    # Cyan
-        "OPTIONS" => "\e[36m"  # Cyan
+        'GET' => "\e[32m",     # Green
+        'POST' => "\e[33m",    # Yellow
+        'PUT' => "\e[34m",     # Blue
+        'PATCH' => "\e[34m",   # Blue
+        'DELETE' => "\e[31m",  # Red
+        'HEAD' => "\e[36m",    # Cyan
+        'OPTIONS' => "\e[36m"  # Cyan
       }.freeze
 
       def initialize(colorize: nil, show_timestamp: true, show_severity: true, compact: false)
@@ -53,10 +53,10 @@ module BrainzLab
       end
 
       def call(severity, timestamp, progname, msg)
-        return "" if msg.nil? || msg.to_s.strip.empty?
+        return '' if msg.nil? || msg.to_s.strip.empty?
 
         message = format_message(msg)
-        return "" if skip_message?(message)
+        return '' if skip_message?(message)
 
         formatted = build_output(severity, timestamp, progname, message)
         "#{formatted}\n"
@@ -74,9 +74,9 @@ module BrainzLab
         end
 
         # Also hook into ActiveSupport::TaggedLogging if present
-        if defined?(ActiveSupport::TaggedLogging) && Rails.logger.respond_to?(:formatter=)
-          Rails.logger.formatter = new
-        end
+        return unless defined?(ActiveSupport::TaggedLogging) && Rails.logger.respond_to?(:formatter=)
+
+        Rails.logger.formatter = new
       end
 
       private
@@ -96,16 +96,16 @@ module BrainzLab
         return false unless BrainzLab.configuration.log_formatter_hide_assets
 
         # Skip asset pipeline noise
-        message.include?("/assets/") ||
-          message.include?("Asset pipeline") ||
-          message.match?(/Started GET "\/assets\//)
+        message.include?('/assets/') ||
+          message.include?('Asset pipeline') ||
+          message.match?(%r{Started GET "/assets/})
       end
 
-      def build_output(severity, timestamp, progname, message)
+      def build_output(severity, timestamp, _progname, message)
         parts = []
 
         if @show_timestamp
-          ts = colorize(timestamp.strftime("%H:%M:%S.%L"), :gray)
+          ts = colorize(timestamp.strftime('%H:%M:%S.%L'), :gray)
           parts << ts
         end
 
@@ -116,11 +116,11 @@ module BrainzLab
 
         parts << format_content(message, severity)
 
-        parts.join(" ")
+        parts.join(' ')
       end
 
       def format_severity(severity)
-        icon = SEVERITY_ICONS[severity] || ""
+        icon = SEVERITY_ICONS[severity] || ''
         text = severity.ljust(5)
 
         if @colorize
@@ -133,11 +133,11 @@ module BrainzLab
 
       def severity_color(severity)
         case severity
-        when "DEBUG" then COLORS[:debug]
-        when "INFO" then COLORS[:info]
-        when "WARN" then COLORS[:warn]
-        when "ERROR" then COLORS[:error]
-        when "FATAL" then COLORS[:fatal]
+        when 'DEBUG' then COLORS[:debug]
+        when 'INFO' then COLORS[:info]
+        when 'WARN' then COLORS[:warn]
+        when 'ERROR' then COLORS[:error]
+        when 'FATAL' then COLORS[:fatal]
         else COLORS[:reset]
         end
       end
@@ -148,13 +148,13 @@ module BrainzLab
           format_request_started(request_match[1], request_match[2])
         elsif (completed_match = message.match(/Completed (\d+) .+ in (\d+(?:\.\d+)?)ms/))
           format_request_completed(completed_match[1].to_i, completed_match[2].to_f)
-        elsif message.include?("Processing by")
+        elsif message.include?('Processing by')
           format_processing(message)
-        elsif message.include?("Parameters:")
+        elsif message.include?('Parameters:')
           format_parameters(message)
-        elsif message.include?("Rendering") || message.include?("Rendered")
+        elsif message.include?('Rendering') || message.include?('Rendered')
           format_rendering(message)
-        elsif severity == "ERROR" || severity == "FATAL"
+        elsif %w[ERROR FATAL].include?(severity)
           format_error(message)
         else
           message
@@ -220,21 +220,19 @@ module BrainzLab
         if @compact
           # Compact: just show the template name
           if (match = message.match(/Render(?:ed|ing) ([^\s]+)/))
-            template = match[1].split("/").last
+            template = match[1].split('/').last
             if @colorize
               "    #{COLORS[:gray]}#{template}#{COLORS[:reset]}"
             else
               "    #{template}"
             end
           else
-            ""
+            ''
           end
+        elsif @colorize
+          "    #{COLORS[:dim]}#{message}#{COLORS[:reset]}"
         else
-          if @colorize
-            "    #{COLORS[:dim]}#{message}#{COLORS[:reset]}"
-          else
-            "    #{message}"
-          end
+          "    #{message}"
         end
       end
 

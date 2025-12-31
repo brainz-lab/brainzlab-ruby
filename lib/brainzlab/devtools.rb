@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-require_relative "devtools/data/collector"
-require_relative "devtools/middleware/asset_server"
-require_relative "devtools/middleware/database_handler"
-require_relative "devtools/middleware/error_page"
-require_relative "devtools/middleware/debug_panel"
-require_relative "devtools/renderers/error_page_renderer"
-require_relative "devtools/renderers/debug_panel_renderer"
+require_relative 'devtools/data/collector'
+require_relative 'devtools/middleware/asset_server'
+require_relative 'devtools/middleware/database_handler'
+require_relative 'devtools/middleware/error_page'
+require_relative 'devtools/middleware/debug_panel'
+require_relative 'devtools/renderers/error_page_renderer'
+require_relative 'devtools/renderers/debug_panel_renderer'
 
 module BrainzLab
   module DevTools
-    ASSETS_PATH = File.expand_path("devtools/assets", __dir__)
+    ASSETS_PATH = File.expand_path('devtools/assets', __dir__)
 
     class << self
       def enabled?
@@ -33,7 +33,7 @@ module BrainzLab
 
       def allowed_ip?(request_ip)
         # Skip IP checking in development - environment check is enough
-        return true if BrainzLab.configuration.environment == "development"
+        return true if BrainzLab.configuration.environment == 'development'
 
         return true if BrainzLab.configuration.devtools_allowed_ips.empty?
 
@@ -42,7 +42,7 @@ module BrainzLab
 
         # Check CIDR ranges
         allowed_ips.any? do |ip|
-          if ip.include?("/")
+          if ip.include?('/')
             ip_in_cidr?(request_ip, ip)
           else
             ip == request_ip
@@ -65,7 +65,7 @@ module BrainzLab
       private
 
       def ip_in_cidr?(ip, cidr)
-        require "ipaddr"
+        require 'ipaddr'
         IPAddr.new(cidr).include?(IPAddr.new(ip))
       rescue IPAddr::InvalidAddressError
         false

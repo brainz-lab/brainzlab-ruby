@@ -9,7 +9,7 @@ module BrainzLab
 
           install_callbacks!
 
-          BrainzLab.debug_log("[Instrumentation] Typhoeus instrumentation installed")
+          BrainzLab.debug_log('[Instrumentation] Typhoeus instrumentation installed')
         end
 
         private
@@ -24,21 +24,25 @@ module BrainzLab
           request = response.request
           return unless request
 
-          uri = URI.parse(request.base_url) rescue nil
+          uri = begin
+            URI.parse(request.base_url)
+          rescue StandardError
+            nil
+          end
           return unless uri
 
           host = uri.host
           return if skip_host?(host)
 
           method = (request.options[:method] || :get).to_s.upcase
-          path = uri.path.empty? ? "/" : uri.path
+          path = uri.path.empty? ? '/' : uri.path
           status = response.response_code
           duration_ms = (response.total_time * 1000).round(2)
 
           # Add breadcrumb
           BrainzLab::Reflex.add_breadcrumb(
             "HTTP #{method} #{host}#{path} -> #{status}",
-            category: "http",
+            category: 'http',
             level: response.success? ? :info : :error,
             data: {
               method: method,
@@ -50,19 +54,17 @@ module BrainzLab
           )
 
           # Track with Flux
-          if BrainzLab.configuration.flux_effectively_enabled?
-            tags = { host: host, method: method, status: status.to_s }
-            BrainzLab::Flux.distribution("http.typhoeus.duration_ms", duration_ms, tags: tags)
-            BrainzLab::Flux.increment("http.typhoeus.requests", tags: tags)
+          return unless BrainzLab.configuration.flux_effectively_enabled?
 
-            unless response.success?
-              BrainzLab::Flux.increment("http.typhoeus.errors", tags: tags)
-            end
+          tags = { host: host, method: method, status: status.to_s }
+          BrainzLab::Flux.distribution('http.typhoeus.duration_ms', duration_ms, tags: tags)
+          BrainzLab::Flux.increment('http.typhoeus.requests', tags: tags)
 
-            if response.timed_out?
-              BrainzLab::Flux.increment("http.typhoeus.timeouts", tags: { host: host })
-            end
-          end
+          BrainzLab::Flux.increment('http.typhoeus.errors', tags: tags) unless response.success?
+
+          return unless response.timed_out?
+
+          BrainzLab::Flux.increment('http.typhoeus.timeouts', tags: { host: host })
         end
 
         def skip_host?(host)
@@ -90,8 +92,8 @@ module BrainzLab
               duration_ms = ((Time.now - started_at) * 1000).round(2)
 
               if BrainzLab.configuration.flux_effectively_enabled?
-                BrainzLab::Flux.distribution("http.typhoeus.hydra.duration_ms", duration_ms)
-                BrainzLab::Flux.distribution("http.typhoeus.hydra.request_count", request_count)
+                BrainzLab::Flux.distribution('http.typhoeus.hydra.duration_ms', duration_ms)
+                BrainzLab::Flux.distribution('http.typhoeus.hydra.request_count', request_count)
               end
 
               result

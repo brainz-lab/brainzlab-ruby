@@ -1,0 +1,126 @@
+plugins:
+  - rubocop-rspec
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.2
+  Exclude:
+    - "vendor/**/*"
+    - "pkg/**/*"
+    - "spec/fixtures/**/*"
+
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+# SDK files with hyphens are standard gem naming
+Naming/FileName:
+  Exclude:
+    - "lib/brainzlab-sdk.rb"
+
+# Development dependencies are in Gemfile for gems
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+# SDK classes/modules are larger by design - they wrap full APIs
+Metrics/ClassLength:
+  Max: 700
+
+Metrics/ModuleLength:
+  Max: 300
+
+Metrics/MethodLength:
+  Max: 150
+
+Metrics/AbcSize:
+  Max: 200
+
+Metrics/CyclomaticComplexity:
+  Max: 50
+
+Metrics/PerceivedComplexity:
+  Max: 50
+
+Metrics/ParameterLists:
+  Max: 10
+
+Metrics/BlockLength:
+  Max: 100
+  Exclude:
+    - "spec/**/*"
+    - "*.gemspec"
+
+Metrics/BlockNesting:
+  Max: 5
+
+Layout/LineLength:
+  Max: 250
+  Exclude:
+    - "*.gemspec"
+
+RSpec/ExampleLength:
+  Max: 30
+
+RSpec/MultipleExpectations:
+  Max: 10
+
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+Lint/UnusedMethodArgument:
+  AllowUnusedKeywordArguments: true
+
+Lint/DuplicateMethods:
+  Enabled: true
+
+# Allow shorter parameter names for SDK methods
+Naming/MethodParameterName:
+  MinNameLength: 1
+
+# Predicate method naming - allow without ? for SDK
+Naming/PredicateMethod:
+  Enabled: false
+
+# Allow get_ prefixes for vault client methods
+Naming/AccessorMethodName:
+  Enabled: false
+
+# Duplicate branches are sometimes intentional for clarity
+Lint/DuplicateBranch:
+  Enabled: false
+
+# Allow class comparison for exception handling
+Style/ClassEqualityComparison:
+  Enabled: false
+
+# Float comparison in tests is acceptable for our use case
+Lint/FloatComparison:
+  Enabled: false
+
+# RSpec configurations
+RSpec/AnyInstance:
+  Enabled: false
+
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
+
+RSpec/MultipleDescribes:
+  Enabled: false
+
+RSpec/ContextWording:
+  Enabled: false
+
+# Safe navigation chains are sometimes needed
+Style/SafeNavigationChainLength:
+  Enabled: false
+
+# We intentionally rescue Exception in devtools
+Lint/RescueException:
+  Exclude:
+    - "lib/brainzlab/devtools/**/*"

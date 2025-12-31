@@ -19,7 +19,7 @@ module BrainzLab
             if status >= 400 && html_response?(headers) && !json_request?(env)
               # Check if this looks like Rails' default error page
               body_content = collect_body(body)
-              if body_content.include?("Action Controller: Exception caught") || body_content.include?("background: #C00")
+              if body_content.include?('Action Controller: Exception caught') || body_content.include?('background: #C00')
                 # Extract exception info from the page
                 exception_info = extract_exception_from_html(body_content)
                 if exception_info
@@ -30,41 +30,41 @@ module BrainzLab
             end
 
             [status, headers, body]
-          rescue Exception => exception
+          rescue Exception => e
             # Don't intercept if request wants JSON
-            return raise_exception(exception) if json_request?(env)
+            return raise_exception(e) if json_request?(env)
 
             # Still capture to Reflex if available
-            capture_to_reflex(exception)
+            capture_to_reflex(e)
 
             # Collect debug data and render branded error page
-            data = collect_debug_data(env, exception)
-            render_error_page(exception, data)
+            data = collect_debug_data(env, e)
+            render_error_page(e, data)
           end
         end
 
         def html_response?(headers)
           # Handle both uppercase and lowercase header names
-          content_type = headers["Content-Type"] || headers["content-type"] || ""
-          content_type.to_s.downcase.include?("text/html")
+          content_type = headers['Content-Type'] || headers['content-type'] || ''
+          content_type.to_s.downcase.include?('text/html')
         end
 
         def extract_exception_from_html(body)
           # Try to extract exception class and message from Rails error page
-          if match = body.match(/<h1>([^<]+)<\/h1>/)
+          if (match = body.match(%r{<h1>([^<]+)</h1>}))
             error_title = match[1]
             # Extract the exception message from the page
-            if msg_match = body.match(/<pre[^>]*>([^<]+)<\/pre>/)
+            if (msg_match = body.match(%r{<pre[^>]*>([^<]+)</pre>}))
               error_message = msg_match[1]
             end
 
             # Try to extract backtrace from Rails 8 format
             # Format: <a class="trace-frames ...">path/to/file.rb:123:in 'method'</a>
             backtrace = []
-            body.scan(/<a[^>]*class="trace-frames[^"]*"[^>]*>\s*([^<]+)\s*<\/a>/m) do |trace_match|
+            body.scan(%r{<a[^>]*class="trace-frames[^"]*"[^>]*>\s*([^<]+)\s*</a>}m) do |trace_match|
               line = trace_match[0].strip
               # Decode HTML entities
-              line = line.gsub("&#39;", "'").gsub("&quot;", '"').gsub("&amp;", "&").gsub("&lt;", "<").gsub("&gt;", ">")
+              line = line.gsub('&#39;', "'").gsub('&quot;', '"').gsub('&amp;', '&').gsub('&lt;', '<').gsub('&gt;', '>')
               backtrace << line unless line.empty?
             end
 
@@ -78,12 +78,13 @@ module BrainzLab
 
         def decode_html_entities(str)
           return str unless str
-          str.gsub("&#39;", "'")
-             .gsub("&quot;", '"')
-             .gsub("&amp;", "&")
-             .gsub("&lt;", "<")
-             .gsub("&gt;", ">")
-             .gsub("&nbsp;", " ")
+
+          str.gsub('&#39;', "'")
+             .gsub('&quot;', '"')
+             .gsub('&amp;', '&')
+             .gsub('&lt;', '<')
+             .gsub('&gt;', '>')
+             .gsub('&nbsp;', ' ')
         end
 
         def collect_debug_data_from_info(env, info)
@@ -127,9 +128,9 @@ module BrainzLab
           [
             500,
             {
-              "Content-Type" => "text/html; charset=utf-8",
-              "Content-Length" => html.bytesize.to_s,
-              "X-Content-Type-Options" => "nosniff"
+              'Content-Type' => 'text/html; charset=utf-8',
+              'Content-Length' => html.bytesize.to_s,
+              'X-Content-Type-Options' => 'nosniff'
             },
             [html]
           ]
@@ -138,7 +139,7 @@ module BrainzLab
         private
 
         def collect_body(body)
-          full_body = +""
+          full_body = +''
           body.each { |part| full_body << part }
           body.close if body.respond_to?(:close)
           full_body
@@ -153,19 +154,19 @@ module BrainzLab
         end
 
         def extract_ip(env)
-          forwarded = env["HTTP_X_FORWARDED_FOR"]
-          return forwarded.split(",").first.strip if forwarded
+          forwarded = env['HTTP_X_FORWARDED_FOR']
+          return forwarded.split(',').first.strip if forwarded
 
-          env["REMOTE_ADDR"]
+          env['REMOTE_ADDR']
         end
 
         def json_request?(env)
-          accept = env["HTTP_ACCEPT"] || ""
-          content_type = env["CONTENT_TYPE"] || ""
+          accept = env['HTTP_ACCEPT'] || ''
+          content_type = env['CONTENT_TYPE'] || ''
 
-          accept.include?("application/json") ||
-            content_type.include?("application/json") ||
-            env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
+          accept.include?('application/json') ||
+            content_type.include?('application/json') ||
+            env['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest'
         end
 
         def capture_to_reflex(exception)
@@ -199,9 +200,9 @@ module BrainzLab
           request = defined?(ActionDispatch::Request) ? ActionDispatch::Request.new(env) : nil
 
           {
-            method: request&.request_method || env["REQUEST_METHOD"],
-            path: request&.path || env["PATH_INFO"],
-            url: request&.url || env["REQUEST_URI"],
+            method: request&.request_method || env['REQUEST_METHOD'],
+            path: request&.path || env['PATH_INFO'],
+            url: request&.url || env['REQUEST_URI'],
             params: scrub_params(context&.request_params || extract_params(env)),
             headers: extract_headers(env),
             session: {}
@@ -228,8 +229,8 @@ module BrainzLab
         def extract_headers(env)
           headers = {}
           env.each do |key, value|
-            if key.start_with?("HTTP_")
-              header_name = key.sub("HTTP_", "").split("_").map(&:capitalize).join("-")
+            if key.start_with?('HTTP_')
+              header_name = key.sub('HTTP_', '').split('_').map(&:capitalize).join('-')
               headers[header_name] = value
             end
           end
@@ -243,7 +244,7 @@ module BrainzLab
 
           params.transform_values.with_index do |(key, value), _|
             if scrub_fields.include?(key.to_s.downcase)
-              "[FILTERED]"
+              '[FILTERED]'
             elsif value.is_a?(Hash)
               scrub_params(value)
             else
@@ -277,14 +278,14 @@ module BrainzLab
         def in_app_frame?(file)
           return false unless file
 
-          file.include?("/app/") && !file.include?("/vendor/") && !file.include?("/gems/")
+          file.include?('/app/') && !file.include?('/vendor/') && !file.include?('/gems/')
         end
 
         def extract_source_from_backtrace(backtrace_lines)
           return nil if backtrace_lines.empty?
 
           # Find the first in-app frame
-          target_line = backtrace_lines.find { |line| in_app_frame?(line.split(":").first) }
+          target_line = backtrace_lines.find { |line| in_app_frame?(line.split(':').first) }
           target_line ||= backtrace_lines.first
 
           match = target_line.match(/\A(.+):(\d+)/)
@@ -317,7 +318,7 @@ module BrainzLab
           return nil unless exception.backtrace&.any?
 
           # Find the first in-app frame (application code, not gems/framework)
-          target_line = exception.backtrace.find { |line| in_app_frame?(line.split(":").first) }
+          target_line = exception.backtrace.find { |line| in_app_frame?(line.split(':').first) }
           # Fall back to first frame if no in-app frame found
           target_line ||= exception.backtrace.first
 
@@ -349,10 +350,10 @@ module BrainzLab
 
         def collect_environment_info
           {
-            rails_version: defined?(Rails::VERSION::STRING) ? Rails::VERSION::STRING : "N/A",
+            rails_version: defined?(Rails::VERSION::STRING) ? Rails::VERSION::STRING : 'N/A',
             ruby_version: RUBY_VERSION,
             env: BrainzLab.configuration.environment,
-            server: ENV["SERVER_SOFTWARE"] || "Unknown",
+            server: ENV['SERVER_SOFTWARE'] || 'Unknown',
             pid: Process.pid
           }
         end
@@ -363,9 +364,9 @@ module BrainzLab
           [
             500,
             {
-              "Content-Type" => "text/html; charset=utf-8",
-              "Content-Length" => html.bytesize.to_s,
-              "X-Content-Type-Options" => "nosniff"
+              'Content-Type' => 'text/html; charset=utf-8',
+              'Content-Length' => html.bytesize.to_s,
+              'X-Content-Type-Options' => 'nosniff'
             },
             [html]
           ]

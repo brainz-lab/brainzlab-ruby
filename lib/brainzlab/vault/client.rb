@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "json"
-require "uri"
+require 'net/http'
+require 'json'
+require 'uri'
 
 module BrainzLab
   module Vault
     class Client
       def initialize(config)
         @config = config
-        @base_url = config.vault_url || "https://vault.brainzlab.ai"
+        @base_url = config.vault_url || 'https://vault.brainzlab.ai'
       end
 
       def get(key, environment:)
         response = request(
           :get,
           "/api/v1/secrets/#{CGI.escape(key)}",
-          headers: { "X-Vault-Environment" => environment }
+          headers: { 'X-Vault-Environment' => environment }
         )
 
         return nil unless response.is_a?(Net::HTTPSuccess)
@@ -24,7 +24,7 @@ module BrainzLab
         data = JSON.parse(response.body, symbolize_names: true)
         data[:value]
       rescue StandardError => e
-        log_error("get", e)
+        log_error('get', e)
         nil
       end
 
@@ -38,22 +38,22 @@ module BrainzLab
 
         response = request(
           :post,
-          "/api/v1/secrets",
-          headers: { "X-Vault-Environment" => environment },
+          '/api/v1/secrets',
+          headers: { 'X-Vault-Environment' => environment },
           body: body
         )
 
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPCreated)
       rescue StandardError => e
-        log_error("set", e)
+        log_error('set', e)
         false
       end
 
       def list(environment:)
         response = request(
           :get,
-          "/api/v1/secrets",
-          headers: { "X-Vault-Environment" => environment }
+          '/api/v1/secrets',
+          headers: { 'X-Vault-Environment' => environment }
         )
 
         return [] unless response.is_a?(Net::HTTPSuccess)
@@ -61,7 +61,7 @@ module BrainzLab
         data = JSON.parse(response.body, symbolize_names: true)
         data[:secrets] || []
       rescue StandardError => e
-        log_error("list", e)
+        log_error('list', e)
         []
       end
 
@@ -69,7 +69,7 @@ module BrainzLab
         response = request(:delete, "/api/v1/secrets/#{CGI.escape(key)}")
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPNoContent)
       rescue StandardError => e
-        log_error("delete", e)
+        log_error('delete', e)
         false
       end
 
@@ -77,8 +77,8 @@ module BrainzLab
         params = { format: format }
         response = request(
           :get,
-          "/api/v1/sync/export",
-          headers: { "X-Vault-Environment" => environment },
+          '/api/v1/sync/export',
+          headers: { 'X-Vault-Environment' => environment },
           params: params
         )
 
@@ -92,28 +92,28 @@ module BrainzLab
           response.body
         end
       rescue StandardError => e
-        log_error("export", e)
-        format == :json ? {} : ""
+        log_error('export', e)
+        format == :json ? {} : ''
       end
 
       def provision(project_id:, app_name:)
         response = request(
           :post,
-          "/api/v1/projects/provision",
+          '/api/v1/projects/provision',
           body: { project_id: project_id, app_name: app_name },
           use_service_key: true
         )
 
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPCreated)
       rescue StandardError => e
-        log_error("provision", e)
+        log_error('provision', e)
         false
       end
 
       # Get all provider keys for the current project
       # Returns a hash of provider => decrypted_key
       def get_provider_keys
-        response = request(:get, "/api/v1/provider_keys/bulk")
+        response = request(:get, '/api/v1/provider_keys/bulk')
 
         return {} unless response.is_a?(Net::HTTPSuccess)
 
@@ -125,15 +125,15 @@ module BrainzLab
         end
         keys
       rescue StandardError => e
-        log_error("get_provider_keys", e)
+        log_error('get_provider_keys', e)
         {}
       end
 
       # Get a specific provider key
-      def get_provider_key(provider:, model_type: "llm")
+      def get_provider_key(provider:, model_type: 'llm')
         response = request(
           :get,
-          "/api/v1/provider_keys/resolve",
+          '/api/v1/provider_keys/resolve',
           params: { provider: provider, model_type: model_type }
         )
 
@@ -142,7 +142,7 @@ module BrainzLab
         data = JSON.parse(response.body, symbolize_names: true)
         data[:key]
       rescue StandardError => e
-        log_error("get_provider_key", e)
+        log_error('get_provider_key', e)
         nil
       end
 
@@ -151,35 +151,33 @@ module BrainzLab
       def request(method, path, headers: {}, body: nil, params: nil, use_service_key: false)
         uri = URI.parse("#{@base_url}#{path}")
 
-        if params
-          uri.query = URI.encode_www_form(params)
-        end
+        uri.query = URI.encode_www_form(params) if params
 
         http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == "https"
+        http.use_ssl = uri.scheme == 'https'
         http.open_timeout = 10
         http.read_timeout = 30
 
         request = case method
-        when :get
-          Net::HTTP::Get.new(uri)
-        when :post
-          Net::HTTP::Post.new(uri)
-        when :put
-          Net::HTTP::Put.new(uri)
-        when :delete
-          Net::HTTP::Delete.new(uri)
-        end
+                  when :get
+                    Net::HTTP::Get.new(uri)
+                  when :post
+                    Net::HTTP::Post.new(uri)
+                  when :put
+                    Net::HTTP::Put.new(uri)
+                  when :delete
+                    Net::HTTP::Delete.new(uri)
+                  end
 
         # Set headers
-        request["Content-Type"] = "application/json"
-        request["Accept"] = "application/json"
+        request['Content-Type'] = 'application/json'
+        request['Accept'] = 'application/json'
 
         if use_service_key
-          request["X-Service-Key"] = @config.vault_master_key || @config.secret_key
+          request['X-Service-Key'] = @config.vault_master_key || @config.secret_key
         else
           auth_key = @config.vault_api_key || @config.secret_key
-          request["Authorization"] = "Bearer #{auth_key}" if auth_key
+          request['Authorization'] = "Bearer #{auth_key}" if auth_key
         end
 
         headers.each { |k, v| request[k] = v }

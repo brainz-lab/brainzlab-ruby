@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "uri"
-require "json"
-require "fileutils"
+require 'net/http'
+require 'uri'
+require 'json'
+require 'fileutils'
 
 module BrainzLab
   module Vision
     class Provisioner
-      CACHE_DIR = ENV.fetch("BRAINZLAB_CACHE_DIR") { File.join(Dir.home, ".brainzlab") }
+      CACHE_DIR = ENV.fetch('BRAINZLAB_CACHE_DIR') { File.join(Dir.home, '.brainzlab') }
 
       def initialize(config)
         @config = config
@@ -38,21 +38,21 @@ module BrainzLab
 
       def should_provision?
         if @config.debug
-          log_debug("Checking Vision provision conditions:")
+          log_debug('Checking Vision provision conditions:')
           log_debug("  vision_auto_provision: #{@config.vision_auto_provision}")
           log_debug("  app_name: '#{@config.app_name}'")
-          log_debug("  vision_api_key set: #{@config.vision_api_key.to_s.strip.length > 0}")
-          log_debug("  vision_ingest_key set: #{@config.vision_ingest_key.to_s.strip.length > 0}")
-          log_debug("  vision_master_key set: #{@config.vision_master_key.to_s.strip.length > 0}")
+          log_debug("  vision_api_key set: #{@config.vision_api_key.to_s.strip.length.positive?}")
+          log_debug("  vision_ingest_key set: #{@config.vision_ingest_key.to_s.strip.length.positive?}")
+          log_debug("  vision_master_key set: #{@config.vision_master_key.to_s.strip.length.positive?}")
         end
 
         return false unless @config.vision_auto_provision
-        return false unless @config.app_name.to_s.strip.length > 0
-        return false if @config.vision_api_key.to_s.strip.length > 0
-        return false if @config.vision_ingest_key.to_s.strip.length > 0
-        return false unless @config.vision_master_key.to_s.strip.length > 0
+        return false unless @config.app_name.to_s.strip.length.positive?
+        return false if @config.vision_api_key.to_s.strip.length.positive?
+        return false if @config.vision_ingest_key.to_s.strip.length.positive?
+        return false unless @config.vision_master_key.to_s.strip.length.positive?
 
-        log_debug("Will provision Vision project") if @config.debug
+        log_debug('Will provision Vision project') if @config.debug
         true
       end
 
@@ -67,13 +67,13 @@ module BrainzLab
       def provision_project
         uri = URI.parse("#{@config.vision_url}/api/v1/projects/provision")
         request = Net::HTTP::Post.new(uri)
-        request["Content-Type"] = "application/json"
-        request["X-Master-Key"] = @config.vision_master_key
-        request["User-Agent"] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
+        request['Content-Type'] = 'application/json'
+        request['X-Master-Key'] = @config.vision_master_key
+        request['User-Agent'] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
         request.body = JSON.generate({
-          name: @config.app_name,
-          environment: @config.environment
-        })
+                                       name: @config.app_name,
+                                       environment: @config.environment
+                                     })
 
         response = execute(uri, request)
         return nil unless response.is_a?(Net::HTTPSuccess)
@@ -120,7 +120,7 @@ module BrainzLab
 
       def execute(uri, request)
         http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == "https"
+        http.use_ssl = uri.scheme == 'https'
         http.open_timeout = 5
         http.read_timeout = 10
         http.request(request)

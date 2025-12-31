@@ -4,6 +4,9 @@ module BrainzLab
   class Configuration
     LEVELS = %i[debug info warn error fatal].freeze
 
+    # recall_min_level has a custom setter with validation
+    attr_reader :recall_min_level
+
     attr_accessor :secret_key,
                   :environment,
                   :service,
@@ -14,7 +17,6 @@ module BrainzLab
                   :debug,
                   :recall_enabled,
                   :recall_url,
-                  :recall_min_level,
                   :recall_buffer_size,
                   :recall_flush_interval,
                   :recall_master_key,
@@ -140,61 +142,61 @@ module BrainzLab
 
     # Services that should not track themselves to avoid circular dependencies
     SELF_TRACKING_SERVICES = {
-      "recall" => :recall_enabled,
-      "reflex" => :reflex_enabled,
-      "pulse" => :pulse_enabled,
-      "flux" => :flux_enabled,
-      "signal" => :signal_enabled
+      'recall' => :recall_enabled,
+      'reflex' => :reflex_enabled,
+      'pulse' => :pulse_enabled,
+      'flux' => :flux_enabled,
+      'signal' => :signal_enabled
     }.freeze
 
     def initialize
       # Authentication
-      @secret_key = ENV["BRAINZLAB_SECRET_KEY"]
+      @secret_key = ENV.fetch('BRAINZLAB_SECRET_KEY', nil)
 
       # Environment
-      @environment = ENV["BRAINZLAB_ENVIRONMENT"] || detect_environment
-      @service = ENV["BRAINZLAB_SERVICE"]
-      @host = ENV["BRAINZLAB_HOST"] || detect_host
+      @environment = ENV['BRAINZLAB_ENVIRONMENT'] || detect_environment
+      @service = ENV.fetch('BRAINZLAB_SERVICE', nil)
+      @host = ENV['BRAINZLAB_HOST'] || detect_host
 
       # App name for auto-provisioning
-      @app_name = ENV["BRAINZLAB_APP_NAME"]
+      @app_name = ENV.fetch('BRAINZLAB_APP_NAME', nil)
 
       # Git context
-      @commit = ENV["GIT_COMMIT"] || ENV["COMMIT_SHA"] || detect_git_commit
-      @branch = ENV["GIT_BRANCH"] || ENV["BRANCH_NAME"] || detect_git_branch
+      @commit = ENV['GIT_COMMIT'] || ENV['COMMIT_SHA'] || detect_git_commit
+      @branch = ENV['GIT_BRANCH'] || ENV['BRANCH_NAME'] || detect_git_branch
 
       # Debug mode - enables verbose logging
-      @debug = ENV["BRAINZLAB_DEBUG"] == "true"
+      @debug = ENV['BRAINZLAB_DEBUG'] == 'true'
 
       # Disable self-tracking - prevents services from tracking to themselves
       # e.g., Recall won't log to itself, Reflex won't track errors to itself
-      @disable_self_tracking = ENV.fetch("BRAINZLAB_DISABLE_SELF_TRACKING", "true") == "true"
+      @disable_self_tracking = ENV.fetch('BRAINZLAB_DISABLE_SELF_TRACKING', 'true') == 'true'
 
       # Recall settings
       @recall_enabled = true
-      @recall_url = ENV["RECALL_URL"] || "https://recall.brainzlab.ai"
+      @recall_url = ENV['RECALL_URL'] || 'https://recall.brainzlab.ai'
       @recall_min_level = :debug
       @recall_buffer_size = 50
       @recall_flush_interval = 5
-      @recall_master_key = ENV["RECALL_MASTER_KEY"]
+      @recall_master_key = ENV.fetch('RECALL_MASTER_KEY', nil)
       @recall_auto_provision = true
 
       # Reflex settings
       @reflex_enabled = true
-      @reflex_url = ENV["REFLEX_URL"] || "https://reflex.brainzlab.ai"
-      @reflex_api_key = ENV["REFLEX_API_KEY"]
-      @reflex_master_key = ENV["REFLEX_MASTER_KEY"]
+      @reflex_url = ENV['REFLEX_URL'] || 'https://reflex.brainzlab.ai'
+      @reflex_api_key = ENV.fetch('REFLEX_API_KEY', nil)
+      @reflex_master_key = ENV.fetch('REFLEX_MASTER_KEY', nil)
       @reflex_auto_provision = true
       @reflex_excluded_exceptions = []
       @reflex_before_send = nil
       @reflex_sample_rate = nil
-      @reflex_fingerprint = nil  # Custom fingerprint callback
+      @reflex_fingerprint = nil # Custom fingerprint callback
 
       # Pulse settings
       @pulse_enabled = true
-      @pulse_url = ENV["PULSE_URL"] || "https://pulse.brainzlab.ai"
-      @pulse_api_key = ENV["PULSE_API_KEY"]
-      @pulse_master_key = ENV["PULSE_MASTER_KEY"]
+      @pulse_url = ENV['PULSE_URL'] || 'https://pulse.brainzlab.ai'
+      @pulse_api_key = ENV.fetch('PULSE_API_KEY', nil)
+      @pulse_master_key = ENV.fetch('PULSE_MASTER_KEY', nil)
       @pulse_auto_provision = true
       @pulse_buffer_size = 50
       @pulse_flush_interval = 5
@@ -203,86 +205,86 @@ module BrainzLab
 
       # Flux settings
       @flux_enabled = true
-      @flux_url = ENV["FLUX_URL"] || "https://flux.brainzlab.ai"
-      @flux_api_key = ENV["FLUX_API_KEY"]
-      @flux_ingest_key = ENV["FLUX_INGEST_KEY"]
-      @flux_master_key = ENV["FLUX_MASTER_KEY"]
+      @flux_url = ENV['FLUX_URL'] || 'https://flux.brainzlab.ai'
+      @flux_api_key = ENV.fetch('FLUX_API_KEY', nil)
+      @flux_ingest_key = ENV.fetch('FLUX_INGEST_KEY', nil)
+      @flux_master_key = ENV.fetch('FLUX_MASTER_KEY', nil)
       @flux_auto_provision = true
       @flux_buffer_size = 100
       @flux_flush_interval = 5
 
       # Signal settings
       @signal_enabled = true
-      @signal_url = ENV["SIGNAL_URL"] || "https://signal.brainzlab.ai"
-      @signal_api_key = ENV["SIGNAL_API_KEY"]
-      @signal_master_key = ENV["SIGNAL_MASTER_KEY"]
+      @signal_url = ENV['SIGNAL_URL'] || 'https://signal.brainzlab.ai'
+      @signal_api_key = ENV.fetch('SIGNAL_API_KEY', nil)
+      @signal_master_key = ENV.fetch('SIGNAL_MASTER_KEY', nil)
       @signal_auto_provision = true
 
       # Vault settings
       @vault_enabled = true
-      @vault_url = ENV["VAULT_URL"] || "https://vault.brainzlab.ai"
-      @vault_api_key = ENV["VAULT_API_KEY"]
-      @vault_master_key = ENV["VAULT_MASTER_KEY"]
+      @vault_url = ENV['VAULT_URL'] || 'https://vault.brainzlab.ai'
+      @vault_api_key = ENV.fetch('VAULT_API_KEY', nil)
+      @vault_master_key = ENV.fetch('VAULT_MASTER_KEY', nil)
       @vault_auto_provision = true
       @vault_cache_enabled = true
-      @vault_cache_ttl = 300  # 5 minutes
-      @vault_auto_load = ENV.fetch("VAULT_AUTO_LOAD", "false") == "true"  # Auto-load secrets into ENV
-      @vault_load_provider_keys = true  # Also load provider keys (OpenAI, etc.)
+      @vault_cache_ttl = 300 # 5 minutes
+      @vault_auto_load = ENV.fetch('VAULT_AUTO_LOAD', 'false') == 'true' # Auto-load secrets into ENV
+      @vault_load_provider_keys = true # Also load provider keys (OpenAI, etc.)
 
       # Vision settings (AI browser automation)
       @vision_enabled = true
-      @vision_url = ENV["VISION_URL"] || "https://vision.brainzlab.ai"
-      @vision_api_key = ENV["VISION_API_KEY"]
-      @vision_ingest_key = ENV["VISION_INGEST_KEY"]
-      @vision_master_key = ENV["VISION_MASTER_KEY"]
+      @vision_url = ENV['VISION_URL'] || 'https://vision.brainzlab.ai'
+      @vision_api_key = ENV.fetch('VISION_API_KEY', nil)
+      @vision_ingest_key = ENV.fetch('VISION_INGEST_KEY', nil)
+      @vision_master_key = ENV.fetch('VISION_MASTER_KEY', nil)
       @vision_auto_provision = true
-      @vision_default_model = ENV["VISION_DEFAULT_MODEL"] || "claude-sonnet-4"
-      @vision_default_browser_provider = ENV["VISION_DEFAULT_BROWSER_PROVIDER"] || "local"
+      @vision_default_model = ENV['VISION_DEFAULT_MODEL'] || 'claude-sonnet-4'
+      @vision_default_browser_provider = ENV['VISION_DEFAULT_BROWSER_PROVIDER'] || 'local'
 
       # Cortex settings (feature flags)
       @cortex_enabled = true
-      @cortex_url = ENV["CORTEX_URL"] || "https://cortex.brainzlab.ai"
-      @cortex_api_key = ENV["CORTEX_API_KEY"]
-      @cortex_master_key = ENV["CORTEX_MASTER_KEY"]
+      @cortex_url = ENV['CORTEX_URL'] || 'https://cortex.brainzlab.ai'
+      @cortex_api_key = ENV.fetch('CORTEX_API_KEY', nil)
+      @cortex_master_key = ENV.fetch('CORTEX_MASTER_KEY', nil)
       @cortex_auto_provision = true
       @cortex_cache_enabled = true
-      @cortex_cache_ttl = 60  # 1 minute
+      @cortex_cache_ttl = 60 # 1 minute
       @cortex_default_context = {}
 
       # Beacon settings (uptime monitoring)
       @beacon_enabled = true
-      @beacon_url = ENV["BEACON_URL"] || "https://beacon.brainzlab.ai"
-      @beacon_api_key = ENV["BEACON_API_KEY"]
-      @beacon_master_key = ENV["BEACON_MASTER_KEY"]
+      @beacon_url = ENV['BEACON_URL'] || 'https://beacon.brainzlab.ai'
+      @beacon_api_key = ENV.fetch('BEACON_API_KEY', nil)
+      @beacon_master_key = ENV.fetch('BEACON_MASTER_KEY', nil)
       @beacon_auto_provision = true
 
       # Nerve settings (job monitoring)
       @nerve_enabled = true
-      @nerve_url = ENV["NERVE_URL"] || "https://nerve.brainzlab.ai"
-      @nerve_api_key = ENV["NERVE_API_KEY"]
-      @nerve_master_key = ENV["NERVE_MASTER_KEY"]
+      @nerve_url = ENV['NERVE_URL'] || 'https://nerve.brainzlab.ai'
+      @nerve_api_key = ENV.fetch('NERVE_API_KEY', nil)
+      @nerve_master_key = ENV.fetch('NERVE_MASTER_KEY', nil)
       @nerve_auto_provision = true
 
       # Dendrite settings (AI documentation)
       @dendrite_enabled = true
-      @dendrite_url = ENV["DENDRITE_URL"] || "https://dendrite.brainzlab.ai"
-      @dendrite_api_key = ENV["DENDRITE_API_KEY"]
-      @dendrite_master_key = ENV["DENDRITE_MASTER_KEY"]
+      @dendrite_url = ENV['DENDRITE_URL'] || 'https://dendrite.brainzlab.ai'
+      @dendrite_api_key = ENV.fetch('DENDRITE_API_KEY', nil)
+      @dendrite_master_key = ENV.fetch('DENDRITE_MASTER_KEY', nil)
       @dendrite_auto_provision = true
 
       # Sentinel settings (host monitoring)
       @sentinel_enabled = true
-      @sentinel_url = ENV["SENTINEL_URL"] || "https://sentinel.brainzlab.ai"
-      @sentinel_api_key = ENV["SENTINEL_API_KEY"]
-      @sentinel_agent_key = ENV["SENTINEL_AGENT_KEY"]
-      @sentinel_master_key = ENV["SENTINEL_MASTER_KEY"]
+      @sentinel_url = ENV['SENTINEL_URL'] || 'https://sentinel.brainzlab.ai'
+      @sentinel_api_key = ENV.fetch('SENTINEL_API_KEY', nil)
+      @sentinel_agent_key = ENV.fetch('SENTINEL_AGENT_KEY', nil)
+      @sentinel_master_key = ENV.fetch('SENTINEL_MASTER_KEY', nil)
       @sentinel_auto_provision = true
 
       # Synapse settings (AI development orchestration)
       @synapse_enabled = true
-      @synapse_url = ENV["SYNAPSE_URL"] || "https://synapse.brainzlab.ai"
-      @synapse_api_key = ENV["SYNAPSE_API_KEY"]
-      @synapse_master_key = ENV["SYNAPSE_MASTER_KEY"]
+      @synapse_url = ENV['SYNAPSE_URL'] || 'https://synapse.brainzlab.ai'
+      @synapse_api_key = ENV.fetch('SYNAPSE_API_KEY', nil)
+      @synapse_master_key = ENV.fetch('SYNAPSE_MASTER_KEY', nil)
       @synapse_auto_provision = true
 
       # Filtering
@@ -292,26 +294,26 @@ module BrainzLab
       @logger = nil
 
       # Instrumentation
-      @instrument_http = true  # Enable HTTP client instrumentation (Net::HTTP, Faraday, HTTParty)
-      @instrument_active_record = true  # AR breadcrumbs for Reflex
-      @instrument_redis = true  # Redis command instrumentation
+      @instrument_http = true # Enable HTTP client instrumentation (Net::HTTP, Faraday, HTTParty)
+      @instrument_active_record = true # AR breadcrumbs for Reflex
+      @instrument_redis = true # Redis command instrumentation
       @instrument_sidekiq = true  # Sidekiq job instrumentation
       @instrument_graphql = true  # GraphQL query instrumentation
       @instrument_mongodb = true  # MongoDB/Mongoid instrumentation
       @instrument_elasticsearch = true  # Elasticsearch instrumentation
       @instrument_action_mailer = true  # ActionMailer instrumentation
-      @instrument_delayed_job = true  # Delayed::Job instrumentation
-      @instrument_grape = true  # Grape API instrumentation
-      @instrument_solid_queue = true  # Solid Queue job instrumentation
-      @instrument_good_job = true  # GoodJob instrumentation
-      @instrument_resque = true  # Resque instrumentation
-      @instrument_excon = true  # Excon HTTP client instrumentation
-      @instrument_typhoeus = true  # Typhoeus HTTP client instrumentation
-      @instrument_dalli = true  # Dalli/Memcached instrumentation
-      @instrument_aws = true  # AWS SDK instrumentation
-      @instrument_stripe = true  # Stripe API instrumentation
+      @instrument_delayed_job = true # Delayed::Job instrumentation
+      @instrument_grape = true # Grape API instrumentation
+      @instrument_solid_queue = true # Solid Queue job instrumentation
+      @instrument_good_job = true # GoodJob instrumentation
+      @instrument_resque = true # Resque instrumentation
+      @instrument_excon = true # Excon HTTP client instrumentation
+      @instrument_typhoeus = true # Typhoeus HTTP client instrumentation
+      @instrument_dalli = true # Dalli/Memcached instrumentation
+      @instrument_aws = true # AWS SDK instrumentation
+      @instrument_stripe = true # Stripe API instrumentation
       @http_ignore_hosts = %w[localhost 127.0.0.1]
-      @redis_ignore_commands = %w[ping info]  # Commands to skip tracking
+      @redis_ignore_commands = %w[ping info] # Commands to skip tracking
 
       # Log formatter settings
       @log_formatter_enabled = true
@@ -325,9 +327,9 @@ module BrainzLab
       @devtools_error_page_enabled = true
       @devtools_debug_panel_enabled = true
       @devtools_allowed_environments = %w[development test]
-      @devtools_allowed_ips = ["127.0.0.1", "::1", "172.16.0.0/12", "192.168.0.0/16", "10.0.0.0/8"]
-      @devtools_asset_path = "/__brainzlab__"
-      @devtools_panel_position = "bottom-right"
+      @devtools_allowed_ips = ['127.0.0.1', '::1', '172.16.0.0/12', '192.168.0.0/16', '10.0.0.0/8']
+      @devtools_asset_path = '/__brainzlab__'
+      @devtools_panel_position = 'bottom-right'
       @devtools_expand_by_default = false
     end
 
@@ -465,7 +467,7 @@ module BrainzLab
 
       # Disable if this is the Recall service itself
       normalized_app_name = @app_name.to_s.downcase.strip
-      normalized_app_name != "recall"
+      normalized_app_name != 'recall'
     end
 
     # Check if reflex is effectively enabled (considering self-tracking)
@@ -475,7 +477,7 @@ module BrainzLab
 
       # Disable if this is the Reflex service itself
       normalized_app_name = @app_name.to_s.downcase.strip
-      normalized_app_name != "reflex"
+      normalized_app_name != 'reflex'
     end
 
     # Check if pulse is effectively enabled (considering self-tracking)
@@ -485,7 +487,7 @@ module BrainzLab
 
       # Disable if this is the Pulse service itself
       normalized_app_name = @app_name.to_s.downcase.strip
-      normalized_app_name != "pulse"
+      normalized_app_name != 'pulse'
     end
 
     # Check if flux is effectively enabled (considering self-tracking)
@@ -495,7 +497,7 @@ module BrainzLab
 
       # Disable if this is the Flux service itself
       normalized_app_name = @app_name.to_s.downcase.strip
-      normalized_app_name != "flux"
+      normalized_app_name != 'flux'
     end
 
     # Check if signal is effectively enabled (considering self-tracking)
@@ -505,7 +507,7 @@ module BrainzLab
 
       # Disable if this is the Signal service itself
       normalized_app_name = @app_name.to_s.downcase.strip
-      normalized_app_name != "signal"
+      normalized_app_name != 'signal'
     end
 
     def debug_log(message)
@@ -515,7 +517,7 @@ module BrainzLab
       if logger
         logger.debug(log_message)
       else
-        $stderr.puts(log_message)
+        warn(log_message)
       end
     end
 
@@ -523,14 +525,14 @@ module BrainzLab
 
     def detect_environment
       return ::Rails.env.to_s if defined?(::Rails) && ::Rails.respond_to?(:env)
-      return ENV["RACK_ENV"] if ENV["RACK_ENV"]
-      return ENV["RUBY_ENV"] if ENV["RUBY_ENV"]
+      return ENV['RACK_ENV'] if ENV['RACK_ENV']
+      return ENV['RUBY_ENV'] if ENV['RUBY_ENV']
 
-      "development"
+      'development'
     end
 
     def detect_host
-      require "socket"
+      require 'socket'
       Socket.gethostname
     rescue StandardError
       nil

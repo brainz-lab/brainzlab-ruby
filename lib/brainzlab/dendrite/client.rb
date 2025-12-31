@@ -1,23 +1,23 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "json"
-require "uri"
-require "cgi"
+require 'net/http'
+require 'json'
+require 'uri'
+require 'cgi'
 
 module BrainzLab
   module Dendrite
     class Client
       def initialize(config)
         @config = config
-        @base_url = config.dendrite_url || "https://dendrite.brainzlab.ai"
+        @base_url = config.dendrite_url || 'https://dendrite.brainzlab.ai'
       end
 
       # Connect a repository
-      def connect_repository(url:, name: nil, branch: "main", **options)
+      def connect_repository(url:, name: nil, branch: 'main', **options)
         response = request(
           :post,
-          "/api/v1/repositories",
+          '/api/v1/repositories',
           body: {
             url: url,
             name: name,
@@ -30,7 +30,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("connect_repository", e)
+        log_error('connect_repository', e)
         nil
       end
 
@@ -39,7 +39,7 @@ module BrainzLab
         response = request(:post, "/api/v1/repositories/#{repo_id}/sync")
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPAccepted)
       rescue StandardError => e
-        log_error("sync_repository", e)
+        log_error('sync_repository', e)
         false
       end
 
@@ -51,20 +51,20 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("get_repository", e)
+        log_error('get_repository', e)
         nil
       end
 
       # List repositories
       def list_repositories
-        response = request(:get, "/api/v1/repositories")
+        response = request(:get, '/api/v1/repositories')
 
         return [] unless response.is_a?(Net::HTTPSuccess)
 
         data = JSON.parse(response.body, symbolize_names: true)
         data[:repositories] || []
       rescue StandardError => e
-        log_error("list_repositories", e)
+        log_error('list_repositories', e)
         []
       end
 
@@ -76,7 +76,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("get_wiki", e)
+        log_error('get_wiki', e)
         nil
       end
 
@@ -88,7 +88,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("get_wiki_page", e)
+        log_error('get_wiki_page', e)
         nil
       end
 
@@ -96,7 +96,7 @@ module BrainzLab
       def search(repo_id, query, limit: 10)
         response = request(
           :get,
-          "/api/v1/search",
+          '/api/v1/search',
           params: { repo_id: repo_id, q: query, limit: limit }
         )
 
@@ -105,7 +105,7 @@ module BrainzLab
         data = JSON.parse(response.body, symbolize_names: true)
         data[:results] || []
       rescue StandardError => e
-        log_error("search", e)
+        log_error('search', e)
         []
       end
 
@@ -113,7 +113,7 @@ module BrainzLab
       def ask(repo_id, question, session_id: nil)
         response = request(
           :post,
-          "/api/v1/chat",
+          '/api/v1/chat',
           body: {
             repo_id: repo_id,
             question: question,
@@ -125,7 +125,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("ask", e)
+        log_error('ask', e)
         nil
       end
 
@@ -133,7 +133,7 @@ module BrainzLab
       def explain(repo_id, path, symbol: nil)
         response = request(
           :post,
-          "/api/v1/explain",
+          '/api/v1/explain',
           body: {
             repo_id: repo_id,
             path: path,
@@ -145,7 +145,7 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("explain", e)
+        log_error('explain', e)
         nil
       end
 
@@ -153,10 +153,10 @@ module BrainzLab
       def generate_diagram(repo_id, type:, scope: nil)
         response = request(
           :post,
-          "/api/v1/diagrams",
+          '/api/v1/diagrams',
           body: {
             repo_id: repo_id,
-            type: type,  # class, er, sequence, architecture
+            type: type, # class, er, sequence, architecture
             scope: scope
           }
         )
@@ -165,21 +165,21 @@ module BrainzLab
 
         JSON.parse(response.body, symbolize_names: true)
       rescue StandardError => e
-        log_error("generate_diagram", e)
+        log_error('generate_diagram', e)
         nil
       end
 
       def provision(project_id:, app_name:)
         response = request(
           :post,
-          "/api/v1/projects/provision",
+          '/api/v1/projects/provision',
           body: { project_id: project_id, app_name: app_name },
           use_service_key: true
         )
 
         response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPCreated)
       rescue StandardError => e
-        log_error("provision", e)
+        log_error('provision', e)
         false
       end
 
@@ -188,34 +188,32 @@ module BrainzLab
       def request(method, path, headers: {}, body: nil, params: nil, use_service_key: false)
         uri = URI.parse("#{@base_url}#{path}")
 
-        if params
-          uri.query = URI.encode_www_form(params)
-        end
+        uri.query = URI.encode_www_form(params) if params
 
         http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == "https"
+        http.use_ssl = uri.scheme == 'https'
         http.open_timeout = 10
-        http.read_timeout = 60  # Longer timeout for AI operations
+        http.read_timeout = 60 # Longer timeout for AI operations
 
         request = case method
-        when :get
-          Net::HTTP::Get.new(uri)
-        when :post
-          Net::HTTP::Post.new(uri)
-        when :put
-          Net::HTTP::Put.new(uri)
-        when :delete
-          Net::HTTP::Delete.new(uri)
-        end
+                  when :get
+                    Net::HTTP::Get.new(uri)
+                  when :post
+                    Net::HTTP::Post.new(uri)
+                  when :put
+                    Net::HTTP::Put.new(uri)
+                  when :delete
+                    Net::HTTP::Delete.new(uri)
+                  end
 
-        request["Content-Type"] = "application/json"
-        request["Accept"] = "application/json"
+        request['Content-Type'] = 'application/json'
+        request['Accept'] = 'application/json'
 
         if use_service_key
-          request["X-Service-Key"] = @config.dendrite_master_key || @config.secret_key
+          request['X-Service-Key'] = @config.dendrite_master_key || @config.secret_key
         else
           auth_key = @config.dendrite_api_key || @config.secret_key
-          request["Authorization"] = "Bearer #{auth_key}" if auth_key
+          request['Authorization'] = "Bearer #{auth_key}" if auth_key
         end
 
         headers.each { |k, v| request[k] = v }

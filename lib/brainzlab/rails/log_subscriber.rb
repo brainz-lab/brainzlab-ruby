@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "active_support/log_subscriber"
+require 'active_support/log_subscriber'
 
 module BrainzLab
   module Rails
@@ -21,12 +21,11 @@ module BrainzLab
         params = payload[:params]&.except(*INTERNAL_PARAMS) || {}
 
         formatter.start_request(request_id,
-          method: payload[:method],
-          path: payload[:path],
-          params: filter_params(params),
-          controller: payload[:controller],
-          action: payload[:action]
-        )
+                                method: payload[:method],
+                                path: payload[:path],
+                                params: filter_params(params),
+                                controller: payload[:controller],
+                                action: payload[:action])
       end
 
       def process_action(event)
@@ -38,18 +37,15 @@ module BrainzLab
         payload = event.payload
 
         formatter.process_action(request_id,
-          controller: payload[:controller],
-          action: payload[:action],
-          status: payload[:status],
-          duration: event.duration,
-          view_runtime: payload[:view_runtime],
-          db_runtime: payload[:db_runtime]
-        )
+                                 controller: payload[:controller],
+                                 action: payload[:action],
+                                 status: payload[:status],
+                                 duration: event.duration,
+                                 view_runtime: payload[:view_runtime],
+                                 db_runtime: payload[:db_runtime])
 
         # Handle exception if present
-        if payload[:exception_object]
-          formatter.error(request_id, payload[:exception_object])
-        end
+        formatter.error(request_id, payload[:exception_object]) if payload[:exception_object]
 
         # Output the formatted log
         output = formatter.end_request(request_id)
@@ -81,11 +77,11 @@ module BrainzLab
         case obj
         when Hash
           obj.each_with_object({}) do |(k, v), h|
-            if filter_keys.include?(k.to_s.downcase)
-              h[k] = "[FILTERED]"
-            else
-              h[k] = deep_filter(v, filter_keys)
-            end
+            h[k] = if filter_keys.include?(k.to_s.downcase)
+                     '[FILTERED]'
+                   else
+                     deep_filter(v, filter_keys)
+                   end
           end
         when Array
           obj.map { |v| deep_filter(v, filter_keys) }
@@ -121,13 +117,12 @@ module BrainzLab
         sql_pattern = normalize_sql(payload[:sql])
 
         LogSubscriber.formatter.sql_query(request_id,
-          name: payload[:name],
-          duration: event.duration,
-          sql: payload[:sql],
-          sql_pattern: sql_pattern,
-          cached: payload[:cached] || payload[:name] == "CACHE",
-          source: source
-        )
+                                          name: payload[:name],
+                                          duration: event.duration,
+                                          sql: payload[:sql],
+                                          sql_pattern: sql_pattern,
+                                          cached: payload[:cached] || payload[:name] == 'CACHE',
+                                          source: source)
       end
 
       private
@@ -135,11 +130,11 @@ module BrainzLab
       def extract_source_location(backtrace)
         # Find the first line that's in app/ directory
         backtrace.each do |line|
-          if line.include?("/app/") && !line.include?("/brainzlab")
-            # Extract just the relevant part: app/models/user.rb:42
-            match = line.match(%r{(app/[^:]+:\d+)})
-            return match[1] if match
-          end
+          next unless line.include?('/app/') && !line.include?('/brainzlab')
+
+          # Extract just the relevant part: app/models/user.rb:42
+          match = line.match(%r{(app/[^:]+:\d+)})
+          return match[1] if match
         end
         nil
       end
@@ -148,11 +143,11 @@ module BrainzLab
         return nil unless sql
 
         sql
-          .gsub(/\b\d+\b/, "?")                    # Replace numbers
-          .gsub(/'[^']*'/, "?")                    # Replace single-quoted strings
-          .gsub(/\$\d+/, "?")                      # Replace positional params
-          .gsub(/\/\*.*?\*\//, "")                 # Remove comments
-          .gsub(/\s+/, " ")                        # Normalize whitespace
+          .gsub(/\b\d+\b/, '?')                    # Replace numbers
+          .gsub(/'[^']*'/, '?')                    # Replace single-quoted strings
+          .gsub(/\$\d+/, '?')                      # Replace positional params
+          .gsub(%r{/\*.*?\*/}, '')                 # Remove comments
+          .gsub(/\s+/, ' ')                        # Normalize whitespace
           .strip
       end
     end
@@ -182,18 +177,18 @@ module BrainzLab
         return broadcasting unless broadcasting
 
         # Extract channel name from gid format: logs:Z2lkOi8vcmVjYWxsL1Byb2plY3QvNDhi...
-        if broadcasting.start_with?("logs:")
-          "LogsChannel"
-        elsif broadcasting.include?(":")
+        if broadcasting.start_with?('logs:')
+          'LogsChannel'
+        elsif broadcasting.include?(':')
           # Generic channel:id format
-          broadcasting.split(":").first.capitalize + "Channel"
+          "#{broadcasting.split(':').first.capitalize}Channel"
         else
           broadcasting
         end
       end
 
       def format_message(message)
-        return "{}" unless message
+        return '{}' unless message
 
         case message
         when Hash
@@ -214,58 +209,60 @@ module BrainzLab
         parts = []
 
         # Show key fields for log entries
-        if hash["level"] || hash[:level]
-          level = hash["level"] || hash[:level]
+        if hash['level'] || hash[:level]
+          level = hash['level'] || hash[:level]
           parts << colorize_level(level)
         end
 
-        if hash["message"] || hash[:message]
-          msg = hash["message"] || hash[:message]
+        if hash['message'] || hash[:message]
+          msg = hash['message'] || hash[:message]
           parts << truncate(msg.to_s, 50)
         end
 
-        if hash["id"] || hash[:id]
-          id = hash["id"] || hash[:id]
+        if hash['id'] || hash[:id]
+          id = hash['id'] || hash[:id]
           parts << colorize(id.to_s[0..7], :gray)
         end
 
-        parts.any? ? parts.join(" ") : hash.keys.first(3).join(", ")
+        parts.any? ? parts.join(' ') : hash.keys.first(3).join(', ')
       end
 
       def build_output(channel, message, duration)
-        time = Time.current.strftime("%H:%M:%S")
-        duration_str = duration ? "#{duration.round(1)}ms" : ""
+        time = Time.current.strftime('%H:%M:%S')
+        duration_str = duration ? "#{duration.round(1)}ms" : ''
 
         parts = [
           colorize(time, :gray),
-          colorize("⚡", :magenta),
+          colorize('⚡', :magenta),
           colorize(channel, :magenta),
-          colorize("→", :gray),
+          colorize('→', :gray),
           message,
           colorize(duration_str, :gray)
         ]
 
-        "  " + parts.join("  ") + "\n"
+        "  #{parts.join('  ')}\n"
       end
 
       def truncate(text, length)
         return text if text.nil? || text.length <= length
+
         "#{text[0..(length - 4)]}..."
       end
 
       def colorize(text, color)
         return text unless $stdout.tty?
         return text unless COLORS[color]
+
         "#{COLORS[color]}#{text}#{COLORS[:reset]}"
       end
 
       def colorize_level(level)
         color = case level.to_s.downcase
-                when "debug" then :gray
-                when "info" then :green
-                when "warn", "warning" then :yellow
-                when "error" then :red
-                when "fatal" then :red
+                when 'debug' then :gray
+                when 'info' then :green
+                when 'warn', 'warning' then :yellow
+                when 'error' then :red
+                when 'fatal' then :red
                 else :white
                 end
         colorize(level.to_s.upcase.ljust(5), color)
@@ -284,10 +281,9 @@ module BrainzLab
         template = template_name(payload[:identifier])
 
         LogSubscriber.formatter.render_template(request_id,
-          template: template,
-          duration: event.duration,
-          layout: payload[:layout]
-        )
+                                                template: template,
+                                                duration: event.duration,
+                                                layout: payload[:layout])
       end
 
       def render_partial(event)
@@ -300,10 +296,9 @@ module BrainzLab
         template = template_name(payload[:identifier])
 
         LogSubscriber.formatter.render_partial(request_id,
-          template: template,
-          duration: event.duration,
-          count: payload[:count]
-        )
+                                               template: template,
+                                               duration: event.duration,
+                                               count: payload[:count])
       end
 
       def render_layout(event)
@@ -316,9 +311,8 @@ module BrainzLab
         layout = template_name(payload[:identifier])
 
         LogSubscriber.formatter.render_layout(request_id,
-          layout: layout,
-          duration: event.duration
-        )
+                                              layout: layout,
+                                              duration: event.duration)
       end
 
       private
@@ -327,10 +321,10 @@ module BrainzLab
         return nil unless identifier
 
         # Extract relative path from full identifier
-        if identifier.include?("/app/views/")
-          identifier.split("/app/views/").last
-        elsif identifier.include?("/views/")
-          identifier.split("/views/").last
+        if identifier.include?('/app/views/')
+          identifier.split('/app/views/').last
+        elsif identifier.include?('/views/')
+          identifier.split('/views/').last
         else
           File.basename(identifier)
         end

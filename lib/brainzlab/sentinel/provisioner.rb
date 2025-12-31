@@ -37,7 +37,7 @@ module BrainzLab
       end
 
       def detect_project_id
-        ENV["BRAINZLAB_PROJECT_ID"]
+        ENV.fetch('BRAINZLAB_PROJECT_ID', nil)
       end
     end
   end

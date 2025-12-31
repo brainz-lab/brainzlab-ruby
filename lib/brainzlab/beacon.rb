@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "beacon/client"
-require_relative "beacon/provisioner"
+require_relative 'beacon/client'
+require_relative 'beacon/provisioner'
 
 module BrainzLab
   module Beacon
@@ -22,7 +22,7 @@ module BrainzLab
       #     timeout: 5
       #   )
       #
-      def create_http_monitor(name, url, interval: 60, **options)
+      def create_http_monitor(name, url, interval: 60, **)
         return nil unless enabled?
 
         ensure_provisioned!
@@ -31,14 +31,14 @@ module BrainzLab
         client.create_monitor(
           name: name,
           url: url,
-          type: "http",
+          type: 'http',
           interval: interval,
-          **options
+          **
         )
       end
 
       # Create an SSL certificate monitor
-      def create_ssl_monitor(name, domain, warn_days: 30, **options)
+      def create_ssl_monitor(name, domain, warn_days: 30, **)
         return nil unless enabled?
 
         ensure_provisioned!
@@ -47,14 +47,14 @@ module BrainzLab
         client.create_monitor(
           name: name,
           url: "https://#{domain}",
-          type: "ssl",
+          type: 'ssl',
           ssl_warn_days: warn_days,
-          **options
+          **
         )
       end
 
       # Create a TCP port monitor
-      def create_tcp_monitor(name, host, port, **options)
+      def create_tcp_monitor(name, host, port, **)
         return nil unless enabled?
 
         ensure_provisioned!
@@ -63,13 +63,13 @@ module BrainzLab
         client.create_monitor(
           name: name,
           url: "#{host}:#{port}",
-          type: "tcp",
-          **options
+          type: 'tcp',
+          **
         )
       end
 
       # Create a DNS monitor
-      def create_dns_monitor(name, domain, expected_record: nil, **options)
+      def create_dns_monitor(name, domain, expected_record: nil, **)
         return nil unless enabled?
 
         ensure_provisioned!
@@ -78,9 +78,9 @@ module BrainzLab
         client.create_monitor(
           name: name,
           url: domain,
-          type: "dns",
+          type: 'dns',
           expected_record: expected_record,
-          **options
+          **
         )
       end
 
@@ -169,7 +169,7 @@ module BrainzLab
         summary = status
         return false unless summary
 
-        summary[:status] == "up" || summary[:status] == "operational"
+        %w[up operational].include?(summary[:status])
       end
 
       # List active incidents

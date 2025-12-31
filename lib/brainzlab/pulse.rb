@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "pulse/client"
-require_relative "pulse/provisioner"
-require_relative "pulse/tracer"
-require_relative "pulse/instrumentation"
-require_relative "pulse/propagation"
+require_relative 'pulse/client'
+require_relative 'pulse/provisioner'
+require_relative 'pulse/tracer'
+require_relative 'pulse/instrumentation'
+require_relative 'pulse/propagation'
 
 module BrainzLab
   module Pulse
@@ -13,7 +13,7 @@ module BrainzLab
       # @param name [String] the trace name
       # @param kind [String] trace kind (request, job, custom)
       # @param parent_context [Propagation::Context] optional parent context for distributed tracing
-      def start_trace(name, kind: "custom", parent_context: nil, **attributes)
+      def start_trace(name, kind: 'custom', parent_context: nil, **attributes)
         return nil unless enabled?
 
         ensure_provisioned!
@@ -36,15 +36,15 @@ module BrainzLab
       end
 
       # Add a span to the current trace
-      def span(name, kind: "custom", **data)
+      def span(name, kind: 'custom', **data, &)
         return yield unless enabled?
         return yield unless tracer.current_trace
 
-        tracer.span(name, kind: kind, **data) { yield }
+        tracer.span(name, kind: kind, **data, &)
       end
 
       # Record a complete trace (for when you have all data upfront)
-      def record_trace(name, kind: "request", started_at:, ended_at:, **attributes)
+      def record_trace(name, started_at:, ended_at:, kind: 'request', **attributes)
         return unless enabled?
 
         ensure_provisioned!
@@ -55,7 +55,7 @@ module BrainzLab
       end
 
       # Record a custom metric
-      def record_metric(name, value:, kind: "gauge", tags: {})
+      def record_metric(name, value:, kind: 'gauge', tags: {})
         return unless enabled?
 
         ensure_provisioned!
@@ -74,15 +74,15 @@ module BrainzLab
 
       # Convenience methods for metrics
       def gauge(name, value, tags: {})
-        record_metric(name, value: value, kind: "gauge", tags: tags)
+        record_metric(name, value: value, kind: 'gauge', tags: tags)
       end
 
       def counter(name, value = 1, tags: {})
-        record_metric(name, value: value, kind: "counter", tags: tags)
+        record_metric(name, value: value, kind: 'counter', tags: tags)
       end
 
       def histogram(name, value, tags: {})
-        record_metric(name, value: value, kind: "histogram", tags: tags)
+        record_metric(name, value: value, kind: 'histogram', tags: tags)
       end
 
       def ensure_provisioned!

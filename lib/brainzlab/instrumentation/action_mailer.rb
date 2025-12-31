@@ -11,19 +11,19 @@ module BrainzLab
           return if @installed
 
           # Subscribe to deliver notification
-          ActiveSupport::Notifications.subscribe("deliver.action_mailer") do |*args|
+          ActiveSupport::Notifications.subscribe('deliver.action_mailer') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             record_delivery(event)
           end
 
           # Subscribe to process notification (when mail is being prepared)
-          ActiveSupport::Notifications.subscribe("process.action_mailer") do |*args|
+          ActiveSupport::Notifications.subscribe('process.action_mailer') do |*args|
             event = ActiveSupport::Notifications::Event.new(*args)
             record_process(event)
           end
 
           @installed = true
-          BrainzLab.debug_log("ActionMailer instrumentation installed")
+          BrainzLab.debug_log('ActionMailer instrumentation installed')
         end
 
         def installed?
@@ -46,13 +46,13 @@ module BrainzLab
           mail = payload[:mail]
           to = sanitize_recipients(mail&.to)
           subject = mail&.subject
-          delivery_method = payload[:perform_deliveries] ? "delivered" : "skipped"
+          delivery_method = payload[:perform_deliveries] ? 'delivered' : 'skipped'
 
           # Add breadcrumb for Reflex
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "Mail #{delivery_method}: #{mailer}",
-              category: "mailer.deliver",
+              category: 'mailer.deliver',
               level: :info,
               data: {
                 mailer: mailer,
@@ -67,13 +67,13 @@ module BrainzLab
           # Record span for Pulse
           record_span(
             name: "Mail deliver #{mailer}",
-            kind: "mailer",
+            kind: 'mailer',
             started_at: event.time,
             ended_at: event.end,
             duration_ms: duration_ms,
             data: {
               mailer: mailer,
-              action: "deliver",
+              action: 'deliver',
               to: to,
               subject: truncate_subject(subject),
               message_id: message_id,
@@ -106,7 +106,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "Mail process: #{mailer}##{action}",
-              category: "mailer.process",
+              category: 'mailer.process',
               level: :info,
               data: {
                 mailer: mailer,
@@ -119,7 +119,7 @@ module BrainzLab
           # Record span for Pulse
           record_span(
             name: "Mail process #{mailer}##{action}",
-            kind: "mailer",
+            kind: 'mailer',
             started_at: event.time,
             ended_at: event.end,
             duration_ms: duration_ms,
@@ -152,27 +152,28 @@ module BrainzLab
 
           case recipients
           when Array
-            recipients.map { |r| mask_email(r) }.join(", ")
+            recipients.map { |r| mask_email(r) }.join(', ')
           else
             mask_email(recipients.to_s)
           end
         end
 
         def mask_email(email)
-          return email unless email.include?("@")
+          return email unless email.include?('@')
 
-          local, domain = email.split("@", 2)
+          local, domain = email.split('@', 2)
           if local.length > 2
             "#{local[0..1]}***@#{domain}"
           else
             "***@#{domain}"
           end
         rescue StandardError
-          "[email]"
+          '[email]'
         end
 
         def truncate_subject(subject)
           return nil unless subject
+
           subject.to_s[0, 100]
         end
       end

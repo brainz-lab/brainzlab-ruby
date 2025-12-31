@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
-require "erb"
-require "cgi"
-require "json"
+require 'erb'
+require 'cgi'
+require 'json'
 
 module BrainzLab
   module DevTools
     module Renderers
       class DebugPanelRenderer
         def initialize
-          @template_path = File.join(DevTools::ASSETS_PATH, "templates", "debug_panel.html.erb")
+          @template_path = File.join(DevTools::ASSETS_PATH, 'templates', 'debug_panel.html.erb')
           # Cache compiled ERB template to avoid file I/O on every request
           @cached_erb = nil
           @template_mtime = nil
@@ -47,7 +47,7 @@ module BrainzLab
         end
 
         def json_pretty(obj)
-          return "" if obj.nil? || (obj.respond_to?(:empty?) && obj.empty?)
+          return '' if obj.nil? || (obj.respond_to?(:empty?) && obj.empty?)
 
           JSON.pretty_generate(obj)
         rescue StandardError
@@ -55,14 +55,14 @@ module BrainzLab
         end
 
         def truncate(text, length = 80)
-          return "" unless text
+          return '' unless text
 
           text = text.to_s
           text.length > length ? "#{text[0...length]}..." : text
         end
 
         def format_duration(ms)
-          return "0ms" unless ms
+          return '0ms' unless ms
 
           if ms >= 1000
             "#{(ms / 1000.0).round(2)}s"
@@ -72,78 +72,82 @@ module BrainzLab
         end
 
         def duration_class(ms)
-          return "" unless ms
+          return '' unless ms
 
           if ms > 1000
-            "very-slow"
+            'very-slow'
           elsif ms > 500
-            "slow"
+            'slow'
           elsif ms > 200
-            "moderate"
+            'moderate'
           else
-            ""
+            ''
           end
         end
 
         def query_duration_class(ms)
-          return "" unless ms
+          return '' unless ms
 
           if ms > 100
-            "very-slow"
+            'very-slow'
           elsif ms > 50
-            "slow"
+            'slow'
           elsif ms > 10
-            "moderate"
+            'moderate'
           else
-            ""
+            ''
           end
         end
 
         def status_class(status)
           case status
-          when 200..299 then "success"
-          when 300..399 then "redirect"
-          when 400..499 then "client-error"
-          when 500..599 then "server-error"
-          else ""
+          when 200..299 then 'success'
+          when 300..399 then 'redirect'
+          when 400..499 then 'client-error'
+          when 500..599 then 'server-error'
+          else ''
           end
         end
 
         def log_level_class(level)
           case level.to_s.downcase
-          when "error", "fatal" then "error"
-          when "warn", "warning" then "warning"
-          when "info" then "info"
-          when "debug" then "debug"
-          else ""
+          when 'error', 'fatal' then 'error'
+          when 'warn', 'warning' then 'warning'
+          when 'info' then 'info'
+          when 'debug' then 'debug'
+          else ''
           end
         end
 
         def format_timestamp(time)
-          return "" unless time
+          return '' unless time
 
-          time.strftime("%H:%M:%S.%L")
+          time.strftime('%H:%M:%S.%L')
         end
 
         def memory_class(delta_mb)
-          return "" unless delta_mb
+          return '' unless delta_mb
 
           if delta_mb > 50
-            "high"
+            'high'
           elsif delta_mb > 20
-            "moderate"
+            'moderate'
           else
-            ""
+            ''
           end
         end
 
         # Cache compiled ERB template, reloading only if file changed (dev mode)
         def cached_erb
-          current_mtime = File.mtime(@template_path) rescue nil
+          current_mtime = begin
+            File.mtime(@template_path)
+          rescue StandardError
+            nil
+          end
 
           if @cached_erb.nil? || (current_mtime && current_mtime != @template_mtime)
             template = File.read(@template_path)
-            @cached_erb = ERB.new(template, trim_mode: "-")
+            @cached_erb = ERB.new(template, trim_mode: '-')
             @template_mtime = current_mtime
           end
 

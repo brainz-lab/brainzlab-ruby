@@ -13,7 +13,7 @@ module BrainzLab
           ::HTTParty.singleton_class.prepend(Patch)
 
           @installed = true
-          BrainzLab.debug_log("HTTParty instrumentation installed")
+          BrainzLab.debug_log('HTTParty instrumentation installed')
         end
 
         def installed?
@@ -26,14 +26,13 @@ module BrainzLab
       end
 
       module Patch
-        def perform_request(http_method, path, options = {}, &block)
+        def perform_request(http_method, path, options = {}, &)
           return super unless should_track?(path, options)
 
           # Inject distributed tracing headers
           options = inject_trace_context(options)
 
           started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          error_info = nil
 
           begin
             response = super
@@ -79,7 +78,7 @@ module BrainzLab
           method = extract_method_name(http_method)
           uri = parse_uri(path, options)
           url = uri ? sanitize_url(uri) : path.to_s
-          host = uri&.host || "unknown"
+          host = uri&.host || 'unknown'
           request_path = uri&.path || path.to_s
           level = error || (status && status >= 400) ? :error : :info
 
@@ -87,7 +86,7 @@ module BrainzLab
           if BrainzLab.configuration.reflex_enabled
             BrainzLab::Reflex.add_breadcrumb(
               "#{method} #{url}",
-              category: "http.httparty",
+              category: 'http.httparty',
               level: level,
               data: {
                 method: method,
@@ -127,7 +126,7 @@ module BrainzLab
           span = {
             span_id: SecureRandom.uuid,
             name: "HTTP #{method} #{host}",
-            kind: "http",
+            kind: 'http',
             started_at: Time.now.utc - (duration_ms / 1000.0),
             ended_at: Time.now.utc,
             duration_ms: duration_ms,
@@ -149,14 +148,14 @@ module BrainzLab
 
         def extract_method_name(http_method)
           case http_method.name
-          when /Get$/ then "GET"
-          when /Post$/ then "POST"
-          when /Put$/ then "PUT"
-          when /Patch$/ then "PATCH"
-          when /Delete$/ then "DELETE"
-          when /Head$/ then "HEAD"
-          when /Options$/ then "OPTIONS"
-          else http_method.name.split("::").last.upcase
+          when /Get$/ then 'GET'
+          when /Post$/ then 'POST'
+          when /Put$/ then 'PUT'
+          when /Patch$/ then 'PATCH'
+          when /Delete$/ then 'DELETE'
+          when /Head$/ then 'HEAD'
+          when /Options$/ then 'OPTIONS'
+          else http_method.name.split('::').last.upcase
           end
         end
 

@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-require "net/http"
-require "uri"
-require "json"
-require "fileutils"
+require 'net/http'
+require 'uri'
+require 'json'
+require 'fileutils'
 
 module BrainzLab
   module Recall
     class Provisioner
-      CACHE_DIR = ENV.fetch("BRAINZLAB_CACHE_DIR") { File.join(Dir.home, ".brainzlab") }
+      CACHE_DIR = ENV.fetch('BRAINZLAB_CACHE_DIR') { File.join(Dir.home, '.brainzlab') }
 
       def initialize(config)
         @config = config
@@ -38,19 +38,19 @@ module BrainzLab
 
       def should_provision?
         if @config.debug
-          log_debug("Checking provision conditions:")
+          log_debug('Checking provision conditions:')
           log_debug("  recall_auto_provision: #{@config.recall_auto_provision}")
           log_debug("  app_name: '#{@config.app_name}'")
-          log_debug("  secret_key set: #{@config.secret_key.to_s.strip.length > 0}")
-          log_debug("  recall_master_key set: #{@config.recall_master_key.to_s.strip.length > 0}")
+          log_debug("  secret_key set: #{@config.secret_key.to_s.strip.length.positive?}")
+          log_debug("  recall_master_key set: #{@config.recall_master_key.to_s.strip.length.positive?}")
         end
 
         return false unless @config.recall_auto_provision
-        return false unless @config.app_name.to_s.strip.length > 0
-        return false if @config.secret_key.to_s.strip.length > 0
-        return false unless @config.recall_master_key.to_s.strip.length > 0
+        return false unless @config.app_name.to_s.strip.length.positive?
+        return false if @config.secret_key.to_s.strip.length.positive?
+        return false unless @config.recall_master_key.to_s.strip.length.positive?
 
-        log_debug("Will provision Recall project") if @config.debug
+        log_debug('Will provision Recall project') if @config.debug
         true
       end
 
@@ -65,9 +65,9 @@ module BrainzLab
       def provision_project
         uri = URI.parse("#{@config.recall_url}/api/v1/projects/provision")
         request = Net::HTTP::Post.new(uri)
-        request["Content-Type"] = "application/json"
-        request["X-Master-Key"] = @config.recall_master_key
-        request["User-Agent"] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
+        request['Content-Type'] = 'application/json'
+        request['X-Master-Key'] = @config.recall_master_key
+        request['User-Agent'] = "brainzlab-sdk-ruby/#{BrainzLab::VERSION}"
         request.body = JSON.generate({ name: @config.app_name })
 
         response = execute(uri, request)
@@ -114,7 +114,7 @@ module BrainzLab
 
       def execute(uri, request)
         http = Net::HTTP.new(uri.host, uri.port)
-        http.use_ssl = uri.scheme == "https"
+        http.use_ssl = uri.scheme == 'https'
         http.open_timeout = 5
         http.read_timeout = 10
         http.request(request)

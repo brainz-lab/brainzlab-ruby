@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative "nerve/client"
-require_relative "nerve/provisioner"
+require_relative 'nerve/client'
+require_relative 'nerve/provisioner'
 
 module BrainzLab
   module Nerve
@@ -32,7 +32,7 @@ module BrainzLab
           job_class: job_class,
           job_id: job_id,
           queue: queue,
-          status: "completed",
+          status: 'completed',
           started_at: started_at,
           ended_at: ended_at,
           **attributes
@@ -69,7 +69,7 @@ module BrainzLab
           job_class: job_class,
           job_id: job_id,
           queue: queue,
-          status: "running",
+          status: 'running',
           started_at: Time.now,
           ended_at: Time.now,
           **attributes
@@ -80,7 +80,7 @@ module BrainzLab
       # @param queue [String] Filter by queue (optional)
       # @param job_class [String] Filter by job class (optional)
       # @param period [String] Time period: "1h", "24h", "7d", "30d"
-      def stats(queue: nil, job_class: nil, period: "1h")
+      def stats(queue: nil, job_class: nil, period: '1h')
         return nil unless enabled?
 
         ensure_provisioned!
@@ -160,7 +160,7 @@ module BrainzLab
       #     # job work
       #   end
       #
-      def track(job_class:, job_id:, queue: "default", **attributes)
+      def track(job_class:, job_id:, queue: 'default', **attributes)
         started_at = Time.now
 
         begin
