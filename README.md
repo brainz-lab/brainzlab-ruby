@@ -3,6 +3,7 @@
 [![Gem Version](https://badge.fury.io/rb/brainzlab.svg)](https://rubygems.org/gems/brainzlab)
 [![CI](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/codeql.yml/badge.svg)](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/codeql.yml)
+[![codecov](https://codecov.io/gh/brainz-lab/brainzlab-ruby/graph/badge.svg)](https://codecov.io/gh/brainz-lab/brainzlab-ruby)
 [![Docs](https://img.shields.io/badge/docs-brainzlab.ai-orange)](https://docs.brainzlab.ai/sdk/ruby/installation)
 [![License: OSAaSy](https://img.shields.io/badge/License-OSAaSy-blue.svg)](LICENSE)
 
