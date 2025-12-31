@@ -2,8 +2,9 @@
 
 [![Gem Version](https://badge.fury.io/rb/brainzlab.svg)](https://rubygems.org/gems/brainzlab)
 [![CI](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/codeql.yml/badge.svg)](https://github.com/brainz-lab/brainzlab-ruby/actions/workflows/codeql.yml)
 [![Docs](https://img.shields.io/badge/docs-brainzlab.ai-orange)](https://docs.brainzlab.ai/sdk/ruby/installation)
-[![License](https://img.shields.io/badge/license-Ossassy-blue.svg)](LICENSE)
+[![License: OSAaSy](https://img.shields.io/badge/License-OSAaSy-blue.svg)](LICENSE)
 
 Official Ruby SDK for [BrainzLab](https://brainzlab.ai) - the complete observability platform.
 
@@ -338,4 +339,4 @@ Full documentation: [docs.brainzlab.ai](https://docs.brainzlab.ai)
 
 ## License
 
-Ossassy License - see [LICENSE](LICENSE) for details.
+OSAaSy License - see [LICENSE](LICENSE) for details.
