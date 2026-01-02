@@ -350,7 +350,7 @@ module BrainzLab
 
         def collect_environment_info
           {
-            rails_version: defined?(Rails::VERSION::STRING) ? Rails::VERSION::STRING : 'N/A',
+            rails_version: defined?(::Rails::VERSION::STRING) ? ::Rails::VERSION::STRING : 'N/A',
             ruby_version: RUBY_VERSION,
             env: BrainzLab.configuration.environment,
             server: ENV['SERVER_SOFTWARE'] || 'Unknown',

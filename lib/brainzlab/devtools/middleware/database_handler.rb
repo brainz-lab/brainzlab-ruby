@@ -60,11 +60,11 @@ module BrainzLab
         end
 
         def run_migrations
-          return not_available('Rails') unless defined?(Rails)
+          return not_available('Rails') unless defined?(::Rails)
 
           output = capture_output do
             ActiveRecord::MigrationContext.new(
-              Rails.root.join('db/migrate'),
+              ::Rails.root.join('db/migrate'),
               ActiveRecord::SchemaMigration
             ).migrate
           end
@@ -75,12 +75,12 @@ module BrainzLab
         end
 
         def migration_status
-          return not_available('Rails') unless defined?(Rails)
+          return not_available('Rails') unless defined?(::Rails)
 
           output = StringIO.new
 
           context = ActiveRecord::MigrationContext.new(
-            Rails.root.join('db/migrate'),
+            ::Rails.root.join('db/migrate'),
             ActiveRecord::SchemaMigration
           )
 
@@ -111,7 +111,7 @@ module BrainzLab
         end
 
         def create_database
-          return not_available('Rails') unless defined?(Rails)
+          return not_available('Rails') unless defined?(::Rails)
 
           output = capture_output do
             ActiveRecord::Tasks::DatabaseTasks.create_current
@@ -125,11 +125,11 @@ module BrainzLab
         end
 
         def rollback_migration
-          return not_available('Rails') unless defined?(Rails)
+          return not_available('Rails') unless defined?(::Rails)
 
           output = capture_output do
             ActiveRecord::MigrationContext.new(
-              Rails.root.join('db/migrate'),
+              ::Rails.root.join('db/migrate'),
               ActiveRecord::SchemaMigration
             ).rollback
           end
