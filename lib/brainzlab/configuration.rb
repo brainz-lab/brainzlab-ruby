@@ -112,7 +112,11 @@ module BrainzLab
                   :instrument_graphql,
                   :instrument_mongodb,
                   :instrument_elasticsearch,
+                  :instrument_action_controller,
+                  :instrument_action_view,
                   :instrument_action_mailer,
+                  :instrument_active_job,
+                  :instrument_active_support_cache,
                   :instrument_delayed_job,
                   :instrument_grape,
                   :instrument_solid_queue,
@@ -123,6 +127,12 @@ module BrainzLab
                   :instrument_dalli,
                   :instrument_aws,
                   :instrument_stripe,
+                  :instrument_active_storage,
+                  :instrument_action_cable,
+                  :instrument_action_dispatch,
+                  :instrument_rails_deprecation,
+                  :instrument_action_mailbox,
+                  :instrument_railties,
                   :http_ignore_hosts,
                   :redis_ignore_commands,
                   :log_formatter_enabled,
@@ -301,7 +311,11 @@ module BrainzLab
       @instrument_graphql = true  # GraphQL query instrumentation
       @instrument_mongodb = true  # MongoDB/Mongoid instrumentation
       @instrument_elasticsearch = true  # Elasticsearch instrumentation
+      @instrument_action_controller = true  # ActionController instrumentation (requests, redirects, filters)
+      @instrument_action_view = true  # ActionView instrumentation (templates, partials, collections)
       @instrument_action_mailer = true  # ActionMailer instrumentation
+      @instrument_active_job = true  # ActiveJob instrumentation (enqueue, perform, retry, discard)
+      @instrument_active_support_cache = true  # ActiveSupport::Cache instrumentation (read, write, fetch)
       @instrument_delayed_job = true # Delayed::Job instrumentation
       @instrument_grape = true # Grape API instrumentation
       @instrument_solid_queue = true # Solid Queue job instrumentation
@@ -312,6 +326,12 @@ module BrainzLab
       @instrument_dalli = true # Dalli/Memcached instrumentation
       @instrument_aws = true # AWS SDK instrumentation
       @instrument_stripe = true # Stripe API instrumentation
+      @instrument_active_storage = true # ActiveStorage instrumentation (uploads, downloads, transforms)
+      @instrument_action_cable = true # ActionCable WebSocket instrumentation
+      @instrument_action_dispatch = true # ActionDispatch instrumentation (middleware, redirects, requests)
+      @instrument_rails_deprecation = true # Rails deprecation warnings tracking
+      @instrument_action_mailbox = true # ActionMailbox inbound email processing instrumentation
+      @instrument_railties = true # Railties config initializer loading instrumentation
       @http_ignore_hosts = %w[localhost 127.0.0.1]
       @redis_ignore_commands = %w[ping info] # Commands to skip tracking
 

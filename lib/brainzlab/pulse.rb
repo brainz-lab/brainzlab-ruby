@@ -85,6 +85,33 @@ module BrainzLab
         record_metric(name, value: value, kind: 'histogram', tags: tags)
       end
 
+      # Record a standalone span (used by brainzlab-rails for Rails instrumentation)
+      # @param name [String] span name (e.g., "sql.SELECT", "cache.read")
+      # @param duration_ms [Float] span duration in milliseconds
+      # @param category [String] span category (e.g., "db.sql", "cache.read", "http.request")
+      # @param attributes [Hash] additional span attributes
+      # @param timestamp [String] ISO8601 timestamp
+      def record_span(name:, duration_ms:, category:, attributes: {}, timestamp: nil)
+        return unless enabled?
+
+        ensure_provisioned!
+        return unless BrainzLab.configuration.pulse_valid?
+
+        span_data = {
+          name: name,
+          category: category,
+          duration_ms: duration_ms,
+          timestamp: timestamp || Time.now.utc.iso8601(3),
+          attributes: attributes,
+          environment: BrainzLab.configuration.environment,
+          service: BrainzLab.configuration.service,
+          host: BrainzLab.configuration.host,
+          request_id: Context.current.request_id
+        }.compact
+
+        client.send_span(span_data)
+      end
+
       def ensure_provisioned!
         return if @provisioned
 

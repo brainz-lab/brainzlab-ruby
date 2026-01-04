@@ -40,6 +40,12 @@ module BrainzLab
         post('/api/v1/metrics', payload)
       end
 
+      def send_span(payload)
+        return unless @config.pulse_enabled && @config.pulse_valid?
+
+        post('/api/v1/spans', payload)
+      end
+
       def flush
         traces_to_send = nil
 

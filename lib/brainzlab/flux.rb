@@ -100,6 +100,16 @@ module BrainzLab
         buffer.add(:metric, metric)
       end
 
+      # Histogram: Alias for distribution (for compatibility with brainzlab-rails)
+      def histogram(name, value, tags: {})
+        distribution(name, value, tags: tags)
+      end
+
+      # Timing: Record duration in milliseconds (alias for distribution)
+      def timing(name, value_ms, tags: {})
+        distribution(name, value_ms, tags: tags.merge(unit: 'ms'))
+      end
+
       # Set: Unique count (cardinality)
       def set(name, value, tags: {})
         return unless enabled?

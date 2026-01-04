@@ -31,8 +31,16 @@ module BrainzLab
         # Elasticsearch instrumentation
         install_elasticsearch! if config.instrument_elasticsearch
 
-        # ActionMailer instrumentation
+        # Rails MVC instrumentation
+        install_action_controller! if config.instrument_action_controller
+        install_action_view! if config.instrument_action_view
         install_action_mailer! if config.instrument_action_mailer
+
+        # ActiveJob instrumentation (covers all job backends)
+        install_active_job! if config.instrument_active_job
+
+        # ActiveSupport::Cache instrumentation
+        install_active_support_cache! if config.instrument_active_support_cache
 
         # Delayed::Job instrumentation
         install_delayed_job! if config.instrument_delayed_job
@@ -55,6 +63,18 @@ module BrainzLab
         # Cloud & Payment
         install_aws! if config.instrument_aws
         install_stripe! if config.instrument_stripe
+
+        # File storage
+        install_active_storage! if config.instrument_active_storage
+
+        # WebSocket
+        install_action_cable! if config.instrument_action_cable
+
+        # Rails framework events
+        install_action_dispatch! if config.instrument_action_dispatch
+        install_rails_deprecation! if config.instrument_rails_deprecation
+        install_action_mailbox! if config.instrument_action_mailbox
+        install_railties! if config.instrument_railties
       end
 
       def install_net_http!
@@ -116,11 +136,39 @@ module BrainzLab
         ElasticsearchInstrumentation.install!
       end
 
+      def install_action_controller!
+        return unless defined?(::ActionController)
+
+        require_relative 'instrumentation/action_controller'
+        ActionController.install!
+      end
+
+      def install_action_view!
+        return unless defined?(::ActionView)
+
+        require_relative 'instrumentation/action_view'
+        ActionView.install!
+      end
+
       def install_action_mailer!
         return unless defined?(::ActionMailer)
 
         require_relative 'instrumentation/action_mailer'
         ActionMailerInstrumentation.install!
+      end
+
+      def install_active_job!
+        return unless defined?(::ActiveJob)
+
+        require_relative 'instrumentation/active_job'
+        ActiveJob.install!
+      end
+
+      def install_active_support_cache!
+        return unless defined?(::ActiveSupport::Cache)
+
+        require_relative 'instrumentation/active_support_cache'
+        ActiveSupportCache.install!
       end
 
       def install_delayed_job!
@@ -191,6 +239,48 @@ module BrainzLab
 
         require_relative 'instrumentation/stripe'
         StripeInstrumentation.install!
+      end
+
+      def install_active_storage!
+        return unless defined?(::ActiveStorage)
+
+        require_relative 'instrumentation/active_storage'
+        ActiveStorage.install!
+      end
+
+      def install_action_cable!
+        return unless defined?(::ActionCable)
+
+        require_relative 'instrumentation/action_cable'
+        ActionCable.install!
+      end
+
+      def install_action_dispatch!
+        return unless defined?(::ActionDispatch)
+
+        require_relative 'instrumentation/action_dispatch'
+        ActionDispatch.install!
+      end
+
+      def install_rails_deprecation!
+        return unless defined?(::Rails)
+
+        require_relative 'instrumentation/rails_deprecation'
+        RailsDeprecation.install!
+      end
+
+      def install_action_mailbox!
+        return unless defined?(::ActionMailbox)
+
+        require_relative 'instrumentation/action_mailbox'
+        ActionMailbox.install!
+      end
+
+      def install_railties!
+        return unless defined?(::Rails)
+
+        require_relative 'instrumentation/railties'
+        Railties.install!
       end
 
       # Manual installation methods for lazy-loaded libraries
