@@ -6,6 +6,14 @@ module BrainzLab
       def install!
         config = BrainzLab.configuration
 
+        # Skip Rails-specific instrumentation if brainzlab-rails gem is handling it
+        # This prevents double-tracking of events
+        if config.rails_instrumentation_handled_externally
+          BrainzLab.debug_log('[Instrumentation] Rails instrumentation handled by brainzlab-rails gem, skipping SDK instrumentation')
+          install_non_rails_instrumentation!(config)
+          return
+        end
+
         # HTTP client instrumentation
         if config.instrument_http
           install_net_http!
@@ -288,6 +296,58 @@ module BrainzLab
         install_net_http!
         install_faraday!
         install_httparty!
+      end
+
+      private
+
+      # Install only non-Rails-specific instrumentation
+      # Used when brainzlab-rails gem handles Rails events via ActiveSupport::Notifications
+      def install_non_rails_instrumentation!(config)
+        # HTTP client instrumentation (not Rails-specific)
+        if config.instrument_http
+          install_net_http!
+          install_faraday!
+          install_httparty!
+        end
+
+        # Redis instrumentation (not Rails-specific)
+        install_redis! if config.instrument_redis
+
+        # Sidekiq instrumentation (not Rails-specific, has its own hooks)
+        install_sidekiq! if config.instrument_sidekiq
+
+        # GraphQL instrumentation (not Rails-specific)
+        install_graphql! if config.instrument_graphql
+
+        # MongoDB instrumentation (not Rails-specific)
+        install_mongodb! if config.instrument_mongodb
+
+        # Elasticsearch instrumentation (not Rails-specific)
+        install_elasticsearch! if config.instrument_elasticsearch
+
+        # Delayed::Job instrumentation (not Rails-specific, has its own hooks)
+        install_delayed_job! if config.instrument_delayed_job
+
+        # Grape API instrumentation (not Rails-specific)
+        install_grape! if config.instrument_grape
+
+        # Modern job queue instrumentation (have their own hooks)
+        install_solid_queue! if config.instrument_solid_queue
+        install_good_job! if config.instrument_good_job
+        install_resque! if config.instrument_resque
+
+        # Additional HTTP clients (not Rails-specific)
+        install_excon! if config.instrument_excon
+        install_typhoeus! if config.instrument_typhoeus
+
+        # Dalli/Memcached (not Rails-specific, has its own hooks)
+        install_dalli! if config.instrument_dalli
+
+        # Cloud & Payment (not Rails-specific)
+        install_aws! if config.instrument_aws
+        install_stripe! if config.instrument_stripe
+
+        BrainzLab.debug_log('[Instrumentation] Non-Rails instrumentation installed (HTTP, Redis, Sidekiq, GraphQL, etc.)')
       end
     end
   end

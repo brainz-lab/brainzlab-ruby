@@ -148,7 +148,8 @@ module BrainzLab
                   :devtools_allowed_ips,
                   :devtools_asset_path,
                   :devtools_panel_position,
-                  :devtools_expand_by_default
+                  :devtools_expand_by_default,
+                  :rails_instrumentation_handled_externally
 
     # Services that should not track themselves to avoid circular dependencies
     SELF_TRACKING_SERVICES = {
@@ -351,6 +352,11 @@ module BrainzLab
       @devtools_asset_path = '/__brainzlab__'
       @devtools_panel_position = 'bottom-right'
       @devtools_expand_by_default = false
+
+      # Rails instrumentation delegation
+      # When true, brainzlab-rails gem handles Rails-specific instrumentation
+      # SDK will only install non-Rails instrumentation (HTTP clients, Redis, etc.)
+      @rails_instrumentation_handled_externally = false
     end
 
     def recall_min_level=(level)
