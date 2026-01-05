@@ -50,6 +50,7 @@ module BrainzLab
                   :signal_enabled,
                   :signal_url,
                   :signal_api_key,
+                  :signal_ingest_key,
                   :signal_master_key,
                   :signal_auto_provision,
                   :vault_enabled,
@@ -185,7 +186,7 @@ module BrainzLab
 
       # Recall settings
       @recall_enabled = true
-      @recall_url = ENV['RECALL_URL'] || 'https://recall.brainzlab.ai'
+      @recall_url = ENV['RECALL_URL'] || detect_product_url('recall')
       @recall_min_level = :debug
       @recall_buffer_size = 50
       @recall_flush_interval = 5
@@ -194,7 +195,7 @@ module BrainzLab
 
       # Reflex settings
       @reflex_enabled = true
-      @reflex_url = ENV['REFLEX_URL'] || 'https://reflex.brainzlab.ai'
+      @reflex_url = ENV['REFLEX_URL'] || detect_product_url('reflex')
       @reflex_api_key = ENV.fetch('REFLEX_API_KEY', nil)
       @reflex_master_key = ENV.fetch('REFLEX_MASTER_KEY', nil)
       @reflex_auto_provision = true
@@ -205,7 +206,7 @@ module BrainzLab
 
       # Pulse settings
       @pulse_enabled = true
-      @pulse_url = ENV['PULSE_URL'] || 'https://pulse.brainzlab.ai'
+      @pulse_url = ENV['PULSE_URL'] || detect_product_url('pulse')
       @pulse_api_key = ENV.fetch('PULSE_API_KEY', nil)
       @pulse_master_key = ENV.fetch('PULSE_MASTER_KEY', nil)
       @pulse_auto_provision = true
@@ -226,8 +227,9 @@ module BrainzLab
 
       # Signal settings
       @signal_enabled = true
-      @signal_url = ENV['SIGNAL_URL'] || 'https://signal.brainzlab.ai'
+      @signal_url = ENV['SIGNAL_URL'] || detect_product_url('signal')
       @signal_api_key = ENV.fetch('SIGNAL_API_KEY', nil)
+      @signal_ingest_key = ENV.fetch('SIGNAL_INGEST_KEY', nil)
       @signal_master_key = ENV.fetch('SIGNAL_MASTER_KEY', nil)
       @signal_auto_provision = true
 
@@ -402,12 +404,12 @@ module BrainzLab
     end
 
     def signal_valid?
-      key = signal_api_key || secret_key
+      key = signal_ingest_key || signal_api_key || secret_key
       !key.nil? && !key.empty?
     end
 
     def signal_auth_key
-      signal_api_key || secret_key
+      signal_ingest_key || signal_api_key || secret_key
     end
 
     def vault_valid?
@@ -576,6 +578,22 @@ module BrainzLab
       result.empty? ? nil : result
     rescue StandardError
       nil
+    end
+
+    def detect_product_url(product)
+      # In development, use .localhost domains (works with Traefik)
+      # In production, use the real brainzlab.ai domains
+      if development?
+        "http://#{product}.localhost"
+      else
+        "https://#{product}.brainzlab.ai"
+      end
+    end
+
+    def development?
+      @environment == 'development' ||
+        ENV['RAILS_ENV'] == 'development' ||
+        ENV['RACK_ENV'] == 'development'
     end
   end
 end

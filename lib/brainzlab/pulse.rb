@@ -97,19 +97,43 @@ module BrainzLab
         ensure_provisioned!
         return unless BrainzLab.configuration.pulse_valid?
 
-        span_data = {
-          name: name,
-          category: category,
-          duration_ms: duration_ms,
-          timestamp: timestamp || Time.now.utc.iso8601(3),
-          attributes: attributes,
-          environment: BrainzLab.configuration.environment,
-          service: BrainzLab.configuration.service,
-          host: BrainzLab.configuration.host,
-          request_id: Context.current.request_id
-        }.compact
+        # Parse timestamp or use current time
+        started_at = if timestamp
+                       Time.parse(timestamp) rescue Time.now.utc
+                     else
+                       Time.now.utc
+                     end
 
-        client.send_span(span_data)
+        span_data = {
+          span_id: SecureRandom.uuid,
+          name: name,
+          kind: category,
+          started_at: started_at,
+          ended_at: started_at, # Same as started_at since we only have duration
+          duration_ms: duration_ms,
+          error: false,
+          data: attributes
+        }
+
+        # If there's an active trace, add the span to it (will be sent with finish_trace)
+        # Otherwise, send it directly to the API as a standalone span
+        if tracer.current_trace
+          tracer.current_spans << span_data
+        else
+          # Send as standalone span (backward compatibility)
+          api_span_data = {
+            name: name,
+            category: category,
+            duration_ms: duration_ms,
+            timestamp: timestamp || Time.now.utc.iso8601(3),
+            attributes: attributes,
+            environment: BrainzLab.configuration.environment,
+            service: BrainzLab.configuration.service,
+            host: BrainzLab.configuration.host,
+            request_id: Context.current.request_id
+          }.compact
+          client.send_span(api_span_data)
+        end
       end
 
       def ensure_provisioned!
