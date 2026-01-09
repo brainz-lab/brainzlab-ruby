@@ -47,12 +47,21 @@ bundle config set --global rubygems.pkg.github.com USERNAME:TOKEN
 
 ## Quick Start
 
+### Get Your API Key
+
+1. Sign up at [platform.brainzlab.ai](https://platform.brainzlab.ai)
+2. Create or select a project
+3. Copy your API key (`sk_live_xxx` or `sk_test_xxx`)
+4. Set it as `BRAINZLAB_SECRET_KEY` environment variable
+
+**One key, all products**: Your Platform API key works across Recall, Reflex, Pulse, and all BrainzLab products. No separate keys needed.
+
 ### Configuration
 
 ```ruby
 # config/initializers/brainzlab.rb
 BrainzLab.configure do |config|
-  # Authentication (required)
+  # Authentication (required) - Your Platform API key
   config.secret_key = ENV['BRAINZLAB_SECRET_KEY']
 
   # Environment
