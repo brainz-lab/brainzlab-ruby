@@ -30,7 +30,7 @@ jobs:
           echo "gem_name=$(ls *.gem)" >> $GITHUB_OUTPUT
 
       - name: Upload gem artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: gem
           path: "*.gem"
